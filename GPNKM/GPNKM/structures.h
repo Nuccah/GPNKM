@@ -9,11 +9,17 @@
 #include <time.h>
 #include <math.h>
 #include <sys/types.h>
+#include <stdbool.h>
 
 /* weather constants */
 #define DRY 1
 #define WET 0.9
 #define RAIN 0.75
+
+/* Tires Sets (x4) */
+#define SLICKS 13
+#define INTERMEDIATES 4
+#define WETS 3
 
 /* random loss percentage constants (by lap)*/
 #define CRASH 0.002
@@ -24,7 +30,7 @@
 #define S2 1800
 #define S3 2900
 
-/* ???? (in seconds) */
+/* Qualifiers (in seconds) */
 #define Q1 1080
 #define Q2 600
 #define Q3 720
@@ -37,14 +43,21 @@
 #define FUELSMAX 100.0
 #define FUELSMIN 90.0
 #define FUELCMAX 2.0
-#define FUELMIN 0.5
+#define FUELCMIN 0.5
 
-/* F1 car variables */
-//TODO Derek I let you this task ^^
+/* F1 car variables 
+	speed = ;
+	fuel = ;
+	twear = ;
+*/
 
 /* sector type */
 typedef struct TSect {
 	double stime;
+	double speed;
+	bool retired; /* is retired (true) */
+	bool crashed; /* is crashed (true) */
+	bool pitstop; /* is into the pitstop (true) */
 } TSect;
 
 /* lap type */
@@ -65,7 +78,7 @@ typedef struct TCar {
 	bool pitstop; /* is into the pitstop (true) */
 	double fuelStock; /* fuel stock in liter */
 	double fuelCon; /* fuel consumption (in liter) by minute */
-	int wheel; /* wheel type */
+	int tire; /* tire type */
 	TLap* lapTimes; /* it's a pointer beacause laps number depends of the race type (I suppose ^^) */
 } TCar;
  
