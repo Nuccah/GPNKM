@@ -1,6 +1,6 @@
 #ifndef H_STRUCTURES
 #define H_STRUCTURES
-
+ 
 /* All libraries needed */
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,53 +53,56 @@
 
 /* sector type */
 typedef struct TSect {
-	double stime;
-	double speed;
 	bool retired; /* is retired (true) */
 	bool crashed; /* is crashed (true) */
 	bool pitstop; /* is into the pitstop (true) */
+	double stime;
+	double speed;
 } TSect;
 
 /* lap type */
 typedef struct TLap {
-	TSect tabSect[3];
 	double ltime;
 	double averTime;
+	TSect tabSect[3];
 } TLap;
 
 /* car type */
 typedef struct TCar {
-	int num;
-	int start_position;
-	int position;
-	double speed;
+	const char *team;
 	bool retired; /* is retired (true) */
 	bool crashed; /* is crashed (true) */
 	bool pitstop; /* is into the pitstop (true) */
+	int num;
+	int start_position;
+	int position;
+	int tire; /* tire type */
+	double avgSpeed;
 	double fuelStock; /* fuel stock in liter */
 	double fuelCon; /* fuel consumption (in liter) by minute */
-	int tire; /* tire type */
+
 	TLap* lapTimes; /* it's a pointer beacause laps number depends of the race type (I suppose ^^) */
 } TCar;
  
 //TODO complete all the race types!
 /* Trial type */
 typedef struct TTrial {
- 	TCar carList[24];
  	int weather;
+ 	TCar carList[24];
 } TTrial;
 
  /* Qualif type */
 typedef struct TQualif {
-	TCar carList[24];
-	TCar* carLost; /* The last cars that are retrieved from the qualif */
 	int weather;
+	TCar* carLost; /* The last cars that are retrieved from the qualif */
+	TCar carList[24];
+
 } TQualif;
 
 /* Grand Prix type */
 typedef struct TGP {
-	TCar carList[24];
 	int weather;
+	TCar carList[24];
 } TGP;
 
 /* Podium type */
