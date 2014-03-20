@@ -7,7 +7,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{BAEDAF2A-55B3-473A-9B7E-A58D8AF54063}</ProjectGuid>
     <Compiler>
-      <Compiler ctype="GccCompiler" xmlns="" />
+      <Compiler ctype="GccCompiler" />
     </Compiler>
     <Language>C</Language>
     <Target>Bin</Target>
@@ -32,5 +32,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="main.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="structures.h" />
   </ItemGroup>
 </Project>

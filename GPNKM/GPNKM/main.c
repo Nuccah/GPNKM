@@ -2,8 +2,7 @@
 
 int main (int argc, char *argv[])
 {
-	printf ("I hate Derek and Basile!\n"
-			"Do you want to switch in another IDE again? :D\n");
+	printf ("Welcome to the worldest famous GPNKM!\n");
 	
 	return 0;
 }
