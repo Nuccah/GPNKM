@@ -69,7 +69,6 @@ typedef struct TLap {
 
 /* car type */
 typedef struct TCar {
-	const char *team;
 	bool retired; /* is retired (true) */
 	bool crashed; /* is crashed (true) */
 	bool pitstop; /* is into the pitstop (true) */
@@ -111,5 +110,12 @@ typedef struct TPod {
 	TCar second;
 	TCar third;
 } TPod;
+
+/* Team Type */
+typedef struct TTeam {
+	const char *team;
+	TCar* tabCar[2];
+	bool pitStop;
+} TTeam;
 
 #endif
