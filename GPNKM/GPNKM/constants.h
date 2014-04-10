@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <stdbool.h>
 
+
 /* weather constants */
 #define DRY 1.0
 #define WET 0.9
