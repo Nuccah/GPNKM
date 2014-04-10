@@ -32,9 +32,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="main.c" />
+    <Compile Include="pilot.c" />
+    <Compile Include="serveur.c" />
+    <Compile Include="afficheur.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="structures.h" />
     <None Include="serveur.h" />
+    <None Include="pilot.h" />
+    <None Include="afficheur.h" />
+    <None Include="constants.h" />
   </ItemGroup>
 </Project>

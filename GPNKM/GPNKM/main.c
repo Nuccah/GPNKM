@@ -1,15 +1,70 @@
 #include "structures.h"
+#include "constants.h"
+#include "serveur.h"
+#include "afficheur.h"
+#include "pilot.h"
 
 void tester();
-const char * randomWeather();
-double randomNumber(double min, double max);
-double speedWeather(const char *weather);
-double sectorTime(double speed, int sector);
-double lapTime(double s1, double s2, double s3);
-const char * getTeamName(int number);
 
 int main (int argc, char *argv[])
 {
+	int pfdSrv1[2]; // Creation du pipe entre Serveur et Afficheur du Resultat
+	int pfdAdR[2]; // Creation du pipe entre Serveur et Afficheur du Resultat
+	pipe(pfdSrv1);	 // Creation du pipe entre Serveur et Afficheur du Resultat
+	pipe(pfdAdR);	 // Creation du pipe entre Serveur et Afficheur du Resultat
+	int forked;
+	int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
+	forked = fork(); // Premier Fork (Server, Afficheur)
+	if (forked < 0) {
+		perror("Error while attempting Fork (Server/Afficheur de Resultat)");
+		exit(19);
+	}
+	/*Server*/
+	else if (forked > 0) {    
+		close(pfdSrv1[0]); // Close unused read end
+		close(pfdAdR[1]); // Close unused write end
+		int pfdSrv2[2]; 	// Creation des pipes entre Serveur et les Pilotes
+		int pfdDrv[2];	// Creation des pipes entre Serveur et les Pilotes
+		pipe(pfdSrv2);		// Creation des pipes entre Serveur et les Pilotes
+		pipe(pfdAdR);		// Creation des pipes entre Serveur et les Pilotes
+		forked = fork(); // Deuxieme Fork (Server, Pilot)
+		if (forked < 0) {
+			perror("Error while attempting Fork (Server/Pilot)");
+			exit(19);
+		}
+		/*Server*/
+		else if (forked > 0) {    
+			const char *weather = randomWeather(); // Weather Selection
+			printf ("Welcome to the worldest famous GPNKM!\n");
+			printf("Weather: %s \n", weather); 
+		}
+		/*Pilot*/
+		else{ 
+			int i;
+			close(pfdSrv1[0]);close(pfdSrv1[1]); // Close pipe of Server->Afficheur for Pilots
+			close(pfdAdR[0]);close(pfdAdR[1]); // Close pipe of Server->Afficheur for Pilots
+
+			int pid[(sizeof(drivers) / sizeof(int))]; // ????
+			for(i=1;i<(sizeof(drivers) / sizeof(int))+1;i++){
+      			if((pid[i]=fork()) == -1){
+         			printf("Error while attempting Fork (Pilot/Pilot)");
+          			exit(1);
+        		}
+      			else if(pid[i]>0){ // DRIVERS //
+          			printf(" \n pid:%3d\n",pid[i]);
+
+        			break;
+        		}
+    		} 
+		}
+	}
+	/*Afficheur de Resultat*/
+	else{ 
+		close(pfdSrv1[1]); // Close unused write end
+		close(pfdAdR[0]); // Close unused read end
+		printf("This is the Display Program \n");
+	}
+
 //	tester();
 	return 0;
 }
@@ -36,72 +91,6 @@ void tester(){
 }
 
 
-// Chooses random weather condition. Returns weather condition in string form
-const char * randomWeather(){
-	srand(time(NULL));
-	int number = (rand() % (7-1)) + 1;
-	char *x;
-	switch( number ) {
-    	case 1: x = "RAIN"; break;
-    	case 2:case 3: x = "WET"; break;
-    	case 4:case 5:case 6: x = "DRY"; break;
-	}
-	return x;
-}
 
-// Random number function
-double randomNumber(double min, double max){
-	srand(time(NULL));
-	double range = (max - min); 
-    double div = RAND_MAX / range;
-    return min + (rand() / div);
-}
 
-// Speed and Weather (in string form) as parameters
-// Returns modified speed according to weather
-double speedWeather(const char *weather){
-    double speed = randomNumber(MINSPEED, MAXSPEED);
-	printf("Speed: %.2lf \n", speed);
-    double factor;
-    if (strcmp(weather, "DRY") == 0)
-    	factor = DRY;
-	if (strcmp(weather, "WET") == 0)
-    	factor = WET;
-	if (strcmp(weather, "RAIN") == 0)
-    	factor = RAIN;
-    return (speed * factor);
-}
-
-// Car speed and sector length as parameters
-// Calculates & returns sector time
-double sectorTime(double speed, int sector){
-    double mps = (((speed * 1000) / 60) / 60); // Speed in KPH (KM per Hour) to MPS (Meters per Second)
-    return (sector / mps);
-}
-
-// Sector times as parameters
-// Calculates & Returns total lap time
-double lapTime(double s1, double s2, double s3){
-    return (s1 + s2 + s3);
-}
-
-// Attributed car number as parameter
-// Returns Team Name as String
-const char * getTeamName(int number){
-    char *x;
-	switch( number ) {
-    	case 1: case 3: x = "Red Bull Racing-Renault"; break;
-    	case 6: case 44: x = "Mercedes"; break;
-    	case 7: case 14: x = "Ferrari"; break;
-    	case 8: case 13: x = "Lotus-Renault"; break;
-    	case 20: case 22: x = "McLaren-Mercedes"; break;
-    	case 11: case 27: x = "Force India-Mercedes"; break;
-    	case 21: case 99: x = "Sauber-Ferrari"; break;
-    	case 25: case 26: x = "STR-Renault"; break;
-    	case 19: case 77: x = "Williams-Mercedes"; break;
-    	case 4: case 17: x = "Marussia-Ferrari"; break;
-    	case 9: case 10: x = "Caterham-Renault"; break;
-	}
-	return x;
-}
 
