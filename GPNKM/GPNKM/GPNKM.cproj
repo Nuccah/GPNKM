@@ -35,5 +35,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="structures.h" />
+    <None Include="serveur.h" />
   </ItemGroup>
 </Project>
