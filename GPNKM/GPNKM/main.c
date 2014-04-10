@@ -1,41 +1,50 @@
 #include "structures.h"
 
+void tester();
 const char * randomWeather();
 double randomNumber(double min, double max);
-const char * getTeamName(int number);
 double speedWeather(const char *weather);
 double sectorTime(double speed, int sector);
 double lapTime(double s1, double s2, double s3);
+const char * getTeamName(int number);
 
 int main (int argc, char *argv[])
 {
-	printf ("Welcome to the worldest famous GPNKM!\n");
+//	tester();
+	return 0;
+}
+
+void tester(){
+	int Drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10};
+	srand ( time(NULL) );
+	int randDriver = rand() % 22;
 	const char *weather = randomWeather();
-	printf("Weather: %s \n", weather);
 	double speed = speedWeather(weather);
-	printf("Weather Modified Speed: %.2lf \n", speed);
-	const char *team = getTeamName(99);
-	printf("Name: %s \n", team);
+	const char *team = getTeamName(Drivers[randDriver]);
 	double time1 = sectorTime(speed, S1);
 	double time2 = sectorTime(speed, S2);
 	double time3 = sectorTime(speed, S3);
+	double lap1 = lapTime(time1, time2, time3);
+	printf ("Welcome to the worldest famous GPNKM!\n");
+	printf("Weather: %s \n", weather);
+	printf("Weather Modified Speed: %.2lf \n", speed);
+	printf("Name: %s \n", team);
 	printf("Sector 1 Time: %.2lf \n", time1);
 	printf("Sector 2 Time: %.2lf \n", time2);
 	printf("Sector 3 Time: %.2lf \n", time3);
-	printf("Laptime: %.2lf \n", lapTime(time1, time2, time3));
-	return 0;
+	printf("Laptime: %.2lf \n", lap1);
 }
 
 
 // Chooses random weather condition. Returns weather condition in string form
 const char * randomWeather(){
 	srand(time(NULL));
-	int number = (rand() % (4-1)) + 1;
+	int number = (rand() % (7-1)) + 1;
 	char *x;
 	switch( number ) {
     	case 1: x = "RAIN"; break;
-    	case 2: x = "WET"; break;
-    	case 3: x = "DRY"; break;
+    	case 2:case 3: x = "WET"; break;
+    	case 4:case 5:case 6: x = "DRY"; break;
 	}
 	return x;
 }
@@ -67,27 +76,19 @@ double speedWeather(const char *weather){
 // Calculates & returns sector time
 double sectorTime(double speed, int sector){
     double mps = (((speed * 1000) / 60) / 60); // Speed in KPH (KM per Hour) to MPS (Meters per Second)
-    int totalSeconds = (sector / mps);
-    int minutes = totalSeconds / 60;
-    int seconds = totalSeconds % 60;
-    double time = (minutes + (seconds * 0.01));
-    return time;
+    return (sector / mps);
 }
 
 // Sector times as parameters
 // Calculates & Returns total lap time
 double lapTime(double s1, double s2, double s3){
-    int totalSeconds = ((s1 + s2 + s3) * 100);
-    int minutes = totalSeconds / 60;
-    int seconds = totalSeconds % 60;
-    double time = (minutes + (seconds * 0.01));
-    return time;
+    return (s1 + s2 + s3);
 }
 
 // Attributed car number as parameter
 // Returns Team Name as String
 const char * getTeamName(int number){
-    const char *x;
+    char *x;
 	switch( number ) {
     	case 1: case 3: x = "Red Bull Racing-Renault"; break;
     	case 6: case 44: x = "Mercedes"; break;
