@@ -12,7 +12,7 @@
 #include <stdbool.h>
 
 /* weather constants */
-#define DRY 1
+#define DRY 1.0
 #define WET 0.9
 #define RAIN 0.75
 
