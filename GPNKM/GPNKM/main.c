@@ -38,30 +38,33 @@ int main (int argc, char *argv[])
 			close(pfdSrvAdR[0]); // Close unused read end
 			close(pfdAdR[1]); // Close unused write end  
 			const char *weather = randomWeather(); // Weather Selection
-			printf("Weather: %s \n", weather);
+			//printf("Weather: %s \n", weather);
 			for(i=1;i<(sizeof(drivers) / sizeof(int))+1;i++){ // Write in pipe all available numbers
 				write(pfdSrvDrv[1], &drivers[i-1], sizeof(int));
 			} 
 		}
 		/*Pilot (Child)*/
-		else{ 
+		else{
+		 
 			int i;
 			close(pfdSrvAdR[0]);close(pfdSrvAdR[1]); // Close pipe of Server->Afficheur for Pilots
 			close(pfdAdR[0]);close(pfdAdR[1]); // Close pipe of Afficheur->Server for Pilots
 			close(pfdSrvDrv[1]);close(pfdDrv[1]); // Close unused write/read ends of respective pipes
 			int pid[(sizeof(drivers) / sizeof(int))]; // ????
-			printf("%ld\n", sizeof(pid));
-			for(i=1;i<(sizeof(pid)-1);i++){ // Multifork des 22 pilotes
+			//printf("%ld\n", sizeof(pid));
+			for(i=1;i<(sizeof(drivers)/sizeof(int))+1;i++){ // Multifork des 22 pilotes
+			sleep(1);
       			if((pid[i]=fork()) == -1){
          			printf("Error while attempting Fork (Pilot/Pilot)");
           			exit(1);
         		}
       			else if(pid[i]>0){ // DRIVERS //
 					int number;
-          			printf(" \n pid: %3d\n",pid[i]);
+          			//printf(" \n pid: %3d\n",pid[i]);
           			read(pfdSrvDrv[0], &number, sizeof(int)); // First come first serve for driver numbers in pipe
           			const char *team = getTeamName(number); // Return team name according to driver number
-          			printf("Number: %d - Team: %s \n",number, team);
+          			//printf("Number: %d - Team: %s \n",number, team);
+          			break;
         		}
     		} 
 		}
