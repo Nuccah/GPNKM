@@ -8,6 +8,8 @@ void tester();
 
 int main (int argc, char *argv[])
 {
+	setsid
+	;
 	int pfdSrvAdR[2]; // Creation du pipe entre Serveur et Afficheur du Resultat
 	int pfdAdR[2]; // Creation du pipe entre Serveur et Afficheur du Resultat
 	pipe(pfdSrvAdR);	 // Creation du pipe entre Serveur et Afficheur du Resultat
@@ -36,7 +38,6 @@ int main (int argc, char *argv[])
 			close(pfdSrvAdR[0]); // Close unused read end
 			close(pfdAdR[1]); // Close unused write end  
 			const char *weather = randomWeather(); // Weather Selection
-			printf ("Welcome to the worldest famous GPNKM!\n");
 			printf("Weather: %s \n", weather);
 			for(i=1;i<(sizeof(drivers) / sizeof(int))+1;i++){ // Write in pipe all available numbers
 				write(pfdSrvDrv[1], &drivers[i-1], sizeof(int));
@@ -49,7 +50,8 @@ int main (int argc, char *argv[])
 			close(pfdAdR[0]);close(pfdAdR[1]); // Close pipe of Afficheur->Server for Pilots
 			close(pfdSrvDrv[1]);close(pfdDrv[1]); // Close unused write/read ends of respective pipes
 			int pid[(sizeof(drivers) / sizeof(int))]; // ????
-			for(i=1;i<(sizeof(drivers) / sizeof(int))+1;i++){ // Multifork des 22 pilotes
+			printf("%ld\n", sizeof(pid));
+			for(i=1;i<(sizeof(pid)-1);i++){ // Multifork des 22 pilotes
       			if((pid[i]=fork()) == -1){
          			printf("Error while attempting Fork (Pilot/Pilot)");
           			exit(1);
@@ -60,7 +62,6 @@ int main (int argc, char *argv[])
           			read(pfdSrvDrv[0], &number, sizeof(int)); // First come first serve for driver numbers in pipe
           			const char *team = getTeamName(number); // Return team name according to driver number
           			printf("Number: %d - Team: %s \n",number, team);
-        			break;
         		}
     		} 
 		}
@@ -69,7 +70,7 @@ int main (int argc, char *argv[])
 	else{ 
 		close(pfdSrvAdR[1]); // Close unused write end
 		close(pfdAdR[0]); // Close unused read end
-		printf("This is the Display Program \n");
+		showMainMenu();
 	}
 
 //	tester();
