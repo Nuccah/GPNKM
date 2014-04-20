@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>10.0.0</ProductVersion>
+    <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{BAEDAF2A-55B3-473A-9B7E-A58D8AF54063}</ProjectGuid>
     <Compiler>
@@ -42,5 +42,6 @@
     <None Include="pilot.h" />
     <None Include="afficheur.h" />
     <None Include="constants.h" />
+    <None Include="errorControl.h" />
   </ItemGroup>
 </Project>

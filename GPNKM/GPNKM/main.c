@@ -41,7 +41,7 @@ int main (int argc, char *argv[])
 		sid = setsid();
 		if(sid < 0)
 			exit(EXIT_FAILURE);
-		chdir("/");
+		chdir("/tmp"); // Better to run daemon processes in another dir than root
 		close(STDIN_FILENO);
 		close(STDOUT_FILENO);
 		close(STDERR_FILENO);

@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <stdbool.h>
 #include <fcntl.h>
+#include "errorControl.h"
 
 /* weather constants */
 #define DRY 1.0
