@@ -58,7 +58,7 @@ void showQualifMenu()
 	printf ("2 : Begin Qualifier 2\n");
 	printf ("3 : Begin Qualifier 3\n");
 	printf ("4 : Show Results of Qualification Runs\n");
-	printf ("0 : Exit\n");
+	printf ("0 : Back\n");
 	printf ("-------------------------------------\n\n");
 	switch(getchar())
 	{

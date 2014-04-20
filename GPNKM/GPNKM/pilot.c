@@ -7,7 +7,7 @@ void forkPilots(int nPilots, int pfdSrvDrv){
 		pid = fork();
       	if(pid == -1){
          	printf("Error while attempting Fork (Pilot/Pilot)");
-          	return;
+          	exit(EXIT_FAILURE);
         }
       	if(pid==0){ // DRIVERS //
 			int number;

@@ -8,61 +8,70 @@ void tester();
 
 int main (int argc, char *argv[])
 {
-	setsid
-	;
-	int pfdSrvAdR[2]; // Creation du pipe entre Serveur et Afficheur du Resultat
-	int pfdAdR[2]; // Creation du pipe entre Serveur et Afficheur du Resultat
-	pipe(pfdSrvAdR);	 // Creation du pipe entre Serveur et Afficheur du Resultat
-	pipe(pfdAdR);	 // Creation du pipe entre Serveur et Afficheur du Resultat
 	int forked;
 	forked = fork(); // Premier Fork (Server, Afficheur)
 	if (forked < 0) {
 		perror("Error while attempting Fork (Server/Afficheur de Resultat)");
 		exit(19);
 	}
-	/*
+
 	//Server (Parent)//
-	else if (forked > 0) {    
+	else if (forked > 0) {
+		do{
+			fflush(stdout);
+			printf("PID: %d", getpid()); 
+			showMainMenu();
+		}while(1);
+	}
+	/*Afficheur de Resultat (Child)*/
+	else{
+		pid_t process_id = 0;
+ 		pid_t sid = 0;
+ 		process_id = fork();
+ 		if (process_id < 0)
+ 			exit(EXIT_FAILURE);
+		if (process_id > 0)
+		{
+			int status = 0;
+			waitpid(process_id, &status, 0);
+			exit(EXIT_SUCCESS);
+		}
+		umask(0);
+		sid = setsid();
+		if(sid < 0)
+			exit(EXIT_FAILURE);
+		chdir("/");
+		close(STDIN_FILENO);
+		close(STDOUT_FILENO);
+		close(STDERR_FILENO);
 		int pfdSrvDrv[2]; 	// Creation des pipes entre Serveur et les Pilotes
 		int pfdDrv[2];	// Creation des pipes entre Serveur et les Pilotes
-		pipe(pfdSrvDrv);		// Creation des pipes entre Serveur et les Pilotes
-		pipe(pfdAdR);		// Creation des pipes entre Serveur et les Pilotes
-		forked = fork(); // Deuxieme Fork (Server, Pilot)
+		pipe(pfdSrvDrv);		// Creation des pipes entre Serveur et les Pilotes// Creation des pipes entre Serveur et les Pilotes
+		int forked2 = fork(); // Deuxieme Fork (Server, Pilot)
 		int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
-		if (forked < 0) {
+		if (forked2 < 0) {
 			perror("Error while attempting Fork (Server/Pilot)");
 			exit(19);
 		}
 		//Pilots (Child//
-		else if (forked == 0) {
-			close(pfdSrvAdR[0]);close(pfdSrvAdR[1]); // Close pipe of Server->Afficheur for Pilots
-			close(pfdAdR[0]);close(pfdAdR[1]); // Close pipe of Afficheur->Server for Pilots
+		else if (forked2 == 0) {
 			close(pfdSrvDrv[1]);close(pfdDrv[1]); // Close unused write/read ends of respective pipes
 			// Creation of Pilot children, Parent dies
 			forkPilots(sizeof(drivers)/sizeof(int), pfdSrvDrv[0]);
 		}
 		//Server (Parent//
 		else{
-			int i;
-			close(pfdSrvAdR[0]); // Close unused read end
-			close(pfdAdR[1]); // Close unused write end  
+			int i;// Close unused read end
 			const char *weather = randomWeather(); // Weather Selection
 			//printf("Weather: %s \n", weather);
 			for(i=1;i<(sizeof(drivers) / sizeof(int))+1;i++){ // Write in pipe all available numbers
 				write(pfdSrvDrv[1], &drivers[i-1], sizeof(int));
 			}
-			printf("Death of Server");
-			exit(EXIT_SUCCESS); 
 		}
+		do{
+			sleep(5);
+		}while(1);
 	}
-	/*Afficheur de Resultat (Child)*/
-	else{
-		fflush(stdout); 
-		close(pfdSrvAdR[1]); // Close unused write end
-		close(pfdAdR[0]); // Close unused read end
-		showMainMenu();
-	}
-
 //	tester();
 	return 0;
 }
