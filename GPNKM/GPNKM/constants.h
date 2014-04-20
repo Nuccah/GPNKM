@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <stdbool.h>
 #include <fcntl.h>
+#include <sys/msg.h>
 #include "errorControl.h"
 
 /* weather constants */
