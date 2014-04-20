@@ -15,7 +15,7 @@ int main (int argc, char *argv[])
 		exit(19);
 	}
 
-	//Server (Parent)//
+	//Afficheur (Parent)//
 	else if (forked > 0) {
 		do{
 			fflush(stdout);
@@ -23,8 +23,9 @@ int main (int argc, char *argv[])
 			showMainMenu();
 		}while(1);
 	}
-	/*Afficheur de Resultat (Child)*/
+	/*Tampon Serveur (Child)*/
 	else{
+		// DAEMON CODE START //
 		pid_t process_id = 0;
  		pid_t sid = 0;
  		process_id = fork();
@@ -44,6 +45,7 @@ int main (int argc, char *argv[])
 		close(STDIN_FILENO);
 		close(STDOUT_FILENO);
 		close(STDERR_FILENO);
+		// PROCESS NOW A DAEMON //
 		int pfdSrvDrv[2]; 	// Creation des pipes entre Serveur et les Pilotes
 		int pfdDrv[2];	// Creation des pipes entre Serveur et les Pilotes
 		pipe(pfdSrvDrv);		// Creation des pipes entre Serveur et les Pilotes// Creation des pipes entre Serveur et les Pilotes
@@ -59,7 +61,7 @@ int main (int argc, char *argv[])
 			// Creation of Pilot children, Parent dies
 			forkPilots(sizeof(drivers)/sizeof(int), pfdSrvDrv[0]);
 		}
-		//Server (Parent//
+		//Server (Parent) *DEFUNCT*//
 		else{
 			int i;// Close unused read end
 			const char *weather = randomWeather(); // Weather Selection
@@ -68,6 +70,7 @@ int main (int argc, char *argv[])
 				write(pfdSrvDrv[1], &drivers[i-1], sizeof(int));
 			}
 		}
+		// Temporary Loop //
 		do{
 			sleep(5);
 		}while(1);
