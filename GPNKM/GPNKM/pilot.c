@@ -1,5 +1,25 @@
 #include "pilot.h"
 
+void forkPilots(int nPilots, int pfdSrvDrv){
+	int i;
+	pid_t pid; // ????
+	for(i=0;i<(nPilots);i++){ // Multifork des 22 pilotes
+		pid = fork();
+      	if(pid == -1){
+         	printf("Error while attempting Fork (Pilot/Pilot)");
+          	return;
+        }
+      	if(pid==0){ // DRIVERS //
+			int number;
+          	printf(" \n pid: %3d\n",i+1);
+          	read(pfdSrvDrv, &number, sizeof(int)); // First come first serve for driver numbers in pipe
+          	const char *team = getTeamName(number); // Return team name according to driver number
+          //	printf("Number: %d - Team: %s \n",number, team);
+          	return;
+       	}
+    }
+	exit(EXIT_SUCCESS);
+}
 // Random number function
 double randomNumber(double min, double max){
 	srand(time(NULL));

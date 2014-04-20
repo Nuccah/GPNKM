@@ -10,6 +10,7 @@
 #include <math.h>
 #include <sys/types.h>
 #include <stdbool.h>
+#include <fcntl.h>
 
 /* weather constants */
 #define DRY 1.0
