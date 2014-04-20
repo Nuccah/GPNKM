@@ -7,6 +7,6 @@ double randomNumber(double min, double max);
 double speedWeather(const char *weather);
 double sectorTime(double speed, int sector);
 const char * getTeamName(int number);
-void forkPilots(int nPilots, int pfdSrvDrv);
+int forkPilots(int nPilots, int pfdSrvDrv, int pfdDrvSrv);
 
 #endif

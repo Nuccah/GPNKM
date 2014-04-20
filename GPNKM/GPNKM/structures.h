@@ -36,7 +36,6 @@ typedef struct TCar {
 	int tire; /* tire type */
 	double avgSpeed;
 	double fuelStock; /* fuel stock in liter */
-	double fuelCon; /* fuel consumption (in liter) by minute */
 
 	TLap* lapTimes; /* it's a pointer beacause laps number depends of the race type (I suppose ^^) */
 } TCar;
@@ -76,4 +75,13 @@ typedef struct TTeam {
 	bool pitStop;
 } TTeam;
 
+struct msgbufServ {
+	long mtype;     /* message type, must be > 0 */
+	int mInt;  /* message data */
+};
+
+struct msgbufPilot {
+	long mtype;     /* message type, must be > 0 */
+	struct TCar car;  /* message data */
+};
 #endif

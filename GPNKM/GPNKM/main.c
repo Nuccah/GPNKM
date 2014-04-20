@@ -19,7 +19,14 @@ int main (int argc, char *argv[])
 	else if (forked > 0) {
 		do{
 			fflush(stdout);
-			printf("PID: %d", getpid()); 
+			/*int queue_id = msgget(42, 0666 | IPC_CREAT);
+			struct msgbufPilot* pilot_msg;
+			int rcRcv;
+			printf("1\n");
+			pilot_msg = (struct msgbufPilot*)malloc(sizeof(struct msgbufPilot));
+			printf("2\n");
+			rcRcv = msgrcv(queue_id, pilot_msg, sizeof(pilot_msg), 0, 0);	
+			printf("3\n");*/
 			showMainMenu();
 		}while(1);
 	}
@@ -47,27 +54,43 @@ int main (int argc, char *argv[])
 		close(STDERR_FILENO);
 		// PROCESS NOW A DAEMON //
 		int pfdSrvDrv[2]; 	// Creation des pipes entre Serveur et les Pilotes
-		int pfdDrv[2];	// Creation des pipes entre Serveur et les Pilotes
+		int pfdDrvSrv[2];	// Creation des pipes entre Serveur et les Pilotes
 		pipe(pfdSrvDrv);		// Creation des pipes entre Serveur et les Pilotes// Creation des pipes entre Serveur et les Pilotes
-		int forked2 = fork(); // Deuxieme Fork (Server, Pilot)
+		pipe(pfdDrvSrv);
 		int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
+		int queue_id = msgget(42, 0666 | IPC_CREAT); // Creation de msg queue
+		struct msgbufSrv* srv_msg;					 // Creation de msg queue
+		struct msgbufPilot* pilot_msg;					 // Creation de msg queue
+		int rcRcv, rcSnd;							 // Creation de msg queue
+		int forked2 = fork(); // Deuxieme Fork (Server, Pilot)
 		if (forked2 < 0) {
 			perror("Error while attempting Fork (Server/Pilot)");
 			exit(19);
 		}
-		//Pilots (Child//
+		//Pilots (Child)//
 		else if (forked2 == 0) {
-			close(pfdSrvDrv[1]);close(pfdDrv[1]); // Close unused write/read ends of respective pipes
-			// Creation of Pilot children, Parent dies
-			forkPilots(sizeof(drivers)/sizeof(int), pfdSrvDrv[0]);
+			close(pfdSrvDrv[1]);close(pfdDrvSrv[0]); // Close unused write/read ends of respective pipes
+			forkPilots(sizeof(drivers)/sizeof(int), pfdSrvDrv[0], pfdDrvSrv[1]);
+			/*
+			struct TCar* pilot = {0}; 
+			pilot->num = forkPilots(sizeof(drivers)/sizeof(int), pfdSrvDrv[0]);
+			pilot_msg = (struct msgbufPilot*)malloc(sizeof(struct msgbufPilot));
+			pilot_msg->mtype = 1;
+			pilot_msg->car = *pilot;
+			rcSnd = msgsnd(queue_id, pilot_msg, sizeof(pilot_msg), 0);*/
+
 		}
 		//Server (Parent) *DEFUNCT*//
 		else{
-			int i;// Close unused read end
+			int i;
+			int pidDrivers[22];
 			const char *weather = randomWeather(); // Weather Selection
 			//printf("Weather: %s \n", weather);
 			for(i=1;i<(sizeof(drivers) / sizeof(int))+1;i++){ // Write in pipe all available numbers
 				write(pfdSrvDrv[1], &drivers[i-1], sizeof(int));
+			}
+			for(i=1;i<(sizeof(drivers) / sizeof(int))+1;i++){ // Write in pipe all available numbers
+				read(pfdDrvSrv[0], &pidDrivers[i-1], sizeof(int));
 			}
 		}
 		// Temporary Loop //

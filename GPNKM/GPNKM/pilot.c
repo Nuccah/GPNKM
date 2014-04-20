@@ -1,6 +1,6 @@
 #include "pilot.h"
 
-void forkPilots(int nPilots, int pfdSrvDrv){
+int forkPilots(int nPilots, int pfdSrvDrv, int pfdDrvSrv){
 	int i;
 	pid_t pid; // ????
 	for(i=0;i<(nPilots);i++){ // Multifork des 22 pilotes
@@ -11,15 +11,18 @@ void forkPilots(int nPilots, int pfdSrvDrv){
         }
       	if(pid==0){ // DRIVERS //
 			int number;
-          	printf(" \n pid: %3d\n",i+1);
+			int pidNum = getpid();
+          	printf(" \n pid: %3d\n", pidNum);
           	read(pfdSrvDrv, &number, sizeof(int)); // First come first serve for driver numbers in pipe
+          	write(pfdDrvSrv, &pidNum, sizeof(int)); // Write in pipe pilots PID for later kill
           	const char *team = getTeamName(number); // Return team name according to driver number
           //	printf("Number: %d - Team: %s \n",number, team);
-          	return;
+          	return number;
        	}
     }
 	exit(EXIT_SUCCESS);
 }
+
 // Random number function
 double randomNumber(double min, double max){
 	srand(time(NULL));
