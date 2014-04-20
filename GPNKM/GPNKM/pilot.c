@@ -16,11 +16,12 @@ int forkPilots(int nPilots, int pfdSrvDrv, int pfdDrvSrv){
           	read(pfdSrvDrv, &number, sizeof(int)); // First come first serve for driver numbers in pipe
           	write(pfdDrvSrv, &pidNum, sizeof(int)); // Write in pipe pilots PID for later kill
           	const char *team = getTeamName(number); // Return team name according to driver number
-          //	printf("Number: %d - Team: %s \n",number, team);
+          	printf("Number: %d - Team: %s \n",number, team);
           	return number;
        	}
     }
-	exit(EXIT_SUCCESS);
+	int status = 0;
+	waitpid(pid, &status, 0);
 }
 
 // Random number function

@@ -3,7 +3,7 @@
 void showMainMenu()
 {
 	fflush(stdout);
-	system ( "clear" );
+	//system ( "clear" );
 	printf ("Welcome to the worldest famous GPNKM!\n");
 	printf ("-------------------------------------\n\n");
 	printf ("1 : Begin Test Runs\n");

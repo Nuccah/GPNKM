@@ -9,6 +9,11 @@ void tester();
 int main (int argc, char *argv[])
 {
 	int forked;
+	int queue_id = msgget(42, 0666 | IPC_CREAT); // Creation de msg queue
+	struct msgbufSrv* srv_msg;					 // Creation de msg queue
+	struct msgbufPilot pilot_msg;					 // Creation de msg queue
+	struct msgbufPilot pilot_msg2;
+	int rcRcv, rcSnd;							 // Creation de msg queue
 	forked = fork(); // Premier Fork (Server, Afficheur)
 	if (forked < 0) {
 		perror("Error while attempting Fork (Server/Afficheur de Resultat)");
@@ -19,19 +24,17 @@ int main (int argc, char *argv[])
 	else if (forked > 0) {
 		do{
 			fflush(stdout);
-			/*int queue_id = msgget(42, 0666 | IPC_CREAT);
-			struct msgbufPilot* pilot_msg;
-			int rcRcv;
+
 			printf("1\n");
-			pilot_msg = (struct msgbufPilot*)malloc(sizeof(struct msgbufPilot));
 			printf("2\n");
-			rcRcv = msgrcv(queue_id, pilot_msg, sizeof(pilot_msg), 0, 0);	
-			printf("3\n");*/
+			rcRcv = msgrcv(queue_id, &pilot_msg2, sizeof(struct msgbufPilot), 0, 0);	
+			printf("Number Received: %d", pilot_msg2.car.num);
 			showMainMenu();
 		}while(1);
 	}
 	/*Tampon Serveur (Child)*/
 	else{
+
 		// DAEMON CODE START //
 		pid_t process_id = 0;
  		pid_t sid = 0;
@@ -58,10 +61,6 @@ int main (int argc, char *argv[])
 		pipe(pfdSrvDrv);		// Creation des pipes entre Serveur et les Pilotes// Creation des pipes entre Serveur et les Pilotes
 		pipe(pfdDrvSrv);
 		int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
-		int queue_id = msgget(42, 0666 | IPC_CREAT); // Creation de msg queue
-		struct msgbufSrv* srv_msg;					 // Creation de msg queue
-		struct msgbufPilot* pilot_msg;					 // Creation de msg queue
-		int rcRcv, rcSnd;							 // Creation de msg queue
 		int forked2 = fork(); // Deuxieme Fork (Server, Pilot)
 		if (forked2 < 0) {
 			perror("Error while attempting Fork (Server/Pilot)");
@@ -70,15 +69,12 @@ int main (int argc, char *argv[])
 		//Pilots (Child)//
 		else if (forked2 == 0) {
 			close(pfdSrvDrv[1]);close(pfdDrvSrv[0]); // Close unused write/read ends of respective pipes
-			forkPilots(sizeof(drivers)/sizeof(int), pfdSrvDrv[0], pfdDrvSrv[1]);
-			/*
-			struct TCar* pilot = {0}; 
-			pilot->num = forkPilots(sizeof(drivers)/sizeof(int), pfdSrvDrv[0]);
-			pilot_msg = (struct msgbufPilot*)malloc(sizeof(struct msgbufPilot));
-			pilot_msg->mtype = 1;
-			pilot_msg->car = *pilot;
-			rcSnd = msgsnd(queue_id, pilot_msg, sizeof(pilot_msg), 0);*/
-
+			int number = forkPilots(sizeof(drivers)/sizeof(int), pfdSrvDrv[0], pfdDrvSrv[1]);
+			struct TCar pilot = {0};
+			pilot.num = number; 
+			pilot_msg.mtype = 1;
+			pilot_msg.car = pilot;
+			rcSnd = msgsnd(queue_id, &pilot_msg, sizeof(struct msgbufPilot), 0);
 		}
 		//Server (Parent) *DEFUNCT*//
 		else{
