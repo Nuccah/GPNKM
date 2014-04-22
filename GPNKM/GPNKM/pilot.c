@@ -2,7 +2,7 @@
 
 int forkPilots(int nPilots, int pfdSrvDrv, int pfdDrvSrv){
 	int i;
-	pid_t pid;
+	pid_t pid; // ????
 	for(i=0;i<(nPilots);i++){ // Multifork des 22 pilotes
 		pid = fork();
       	if(pid == -1){
@@ -22,6 +22,7 @@ int forkPilots(int nPilots, int pfdSrvDrv, int pfdDrvSrv){
     }
 	int status = 0;
 	waitpid(pid, &status, 0);
+	exit(EXIT_SUCCESS);
 }
 
 // Random number function

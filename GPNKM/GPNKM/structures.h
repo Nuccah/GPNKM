@@ -75,15 +75,15 @@ typedef struct TTeam {
 	bool pitStop;
 } TTeam;
 
-struct msgbufServ {
+typedef struct msgbufServ {
 	long mtype;     /* message type, must be > 0 */
 	int mInt;  /* message data */
-};
+} TmsgbufServ;
 
-struct msgbufAdR { // Afficheur de Resultat
+typedef struct TmsgbufAdr { // Afficheur de Resultat
 	long mtype;     /* message type, must be > 0 */
-	int tabD[22];  /* message data */
-};
+	pid_t tabD[23];  /* message data */
+} TmsgbufAdr;
 
 struct msgbufPilot {
 	long mtype;     /* message type, must be > 0 */
