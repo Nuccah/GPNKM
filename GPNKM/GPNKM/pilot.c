@@ -33,8 +33,24 @@ void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot 
 	msgrcv(queue_id, &weatherInfo, sizeof(struct msgbufServ), pid, 0);
 	pilot.tires = chooseTires(weatherInfo.mInt, pilot);
 	do{
-		sleep(5); // FUCKING LOOP TO DELETE ASAP!!!!!
+	/*	usleep((pilot.num*100)/4);
+		pilot.retired = damaged();
+		pilot.crashed = crashed();
+		if ((pilot.retired) || (pilot.crashed))
+			printf("%d : BOOM\n", getpid());
+		else
+			printf("%d : Not crashed or retired\n", getpid());*/
 	}while(1);
+}
+
+bool crashed(){
+	srand(time(NULL));
+	return (rand()/(RAND_MAX+1.0) < CRASH);
+}
+
+bool damaged(){
+	srand(time(NULL));
+	return (rand()/(RAND_MAX+1.0) < BREAK);
 }
 
 int chooseTires(int weather, TCar pilot){
@@ -74,8 +90,6 @@ double sectorTime(double speed, int sector){
     double mps = (((speed * 1000) / 60) / 60); // Speed in KPH (KM per Hour) to MPS (Meters per Second)
     return (sector / mps);
 }
-
-
 
 // Attributed car number as parameter
 // Returns Team Name as String
