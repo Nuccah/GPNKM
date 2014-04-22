@@ -12,11 +12,8 @@ int forkPilots(int pfdSrvDrv, int pfdDrvSrv){
       	if(pid==0){ // DRIVERS //
 			int number;
 			int pidNum = getpid();
-          	printf(" \n pid: %3d\n", pidNum);
           	read(pfdSrvDrv, &number, sizeof(int)); // First come first serve for driver numbers in pipe
           	write(pfdDrvSrv, &pidNum, sizeof(int)); // Write in pipe pilots PID for later kill
-          	const char *team = getTeamName(number); // Return team name according to driver number
-          	printf("Number: %d - Team: %s \n",number, team);
           	return number;
        	}
     }
@@ -26,14 +23,26 @@ int forkPilots(int pfdSrvDrv, int pfdDrvSrv){
 }
 
 void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg){
+	TmsgbufServ weatherInfo;
+	pid_t pid = getpid();
 	struct TCar pilot = {0};
 	pilot.num = number; 
 	pilot_msg.mtype = SERVER;
 	pilot_msg.car = pilot;
 	msgsnd(queue_id, &pilot_msg, sizeof(struct msgbufPilot), 0);
+	msgrcv(queue_id, &weatherInfo, sizeof(struct msgbufServ), pid, 0);
+	pilot.tires = chooseTires(weatherInfo.mInt, pilot);
 	do{
 		sleep(5); // FUCKING LOOP TO DELETE ASAP!!!!!
 	}while(1);
+}
+
+int chooseTires(int weather, TCar pilot){
+	switch( weather ) {
+    	case 1: return WETS;
+    	case 2:case 3: return INTERMEDIATES;
+    	case 4:case 5:case 6: return SLICKS;
+	}
 }
 
 // Random number function

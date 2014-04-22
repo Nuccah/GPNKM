@@ -3,6 +3,7 @@
 #include "structures.h"
 #include "constants.h"
 
+int chooseTires(int weather, TCar pilot);
 double randomNumber(double min, double max);
 double speedWeather(const char *weather);
 double sectorTime(double speed, int sector);

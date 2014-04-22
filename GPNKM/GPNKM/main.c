@@ -78,6 +78,8 @@ void daemonize(){
 	close(STDERR_FILENO);
 }
 
+
+
 /*
 void tester(){
 	int Drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10};
@@ -98,8 +100,8 @@ void tester(){
 	printf("Sector 2 Time: %.2lf \n", time2);
 	printf("Sector 3 Time: %.2lf \n", time3);
 	printf("Laptime: %.2lf \n", lap1);
-}
-*/
+}*/
+
 
 
 

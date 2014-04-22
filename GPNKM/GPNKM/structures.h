@@ -33,7 +33,7 @@ typedef struct TCar {
 	int num;
 	int start_position;
 	int position;
-	int tire; /* sets of tires */
+	int tires; /* sets of tires */
 	double avgSpeed;
 	double fuelStock; /* fuel stock in liter */
 
@@ -82,7 +82,8 @@ typedef struct msgbufServ {
 
 typedef struct TmsgbufAdr { // Afficheur de Resultat
 	long mtype;     /* message type, must be > 0 */
-	pid_t tabD[23];  /* message data */
+	pid_t tabD[23];  /* PID data */
+	int weather; /* weather data */
 } TmsgbufAdr;
 
 typedef struct msgbufPilot {

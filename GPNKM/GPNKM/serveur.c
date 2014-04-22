@@ -1,16 +1,17 @@
 #include "serveur.h"
 
 // Chooses random weather condition. Returns weather condition in string form
-const char * randomWeather(int queue_id, pid_t *tabD){
+int randomWeather(int queue_id, pid_t *tabD){
 	srand(time(NULL));
 	int number = (rand() % (7-1)) + 1;
-	char *x;
-	switch( number ) {
-    	case 1: x = "RAIN"; break;
-    	case 2:case 3: x = "WET"; break;
-    	case 4:case 5:case 6: x = "DRY"; break;
+	int i;
+	TmsgbufServ weatherInfo;
+	for(i=0; i<(DRIVERS-1); i++){
+		weatherInfo.mtype = tabD[i];
+		weatherInfo.mInt = number;
+		msgsnd(queue_id, &weatherInfo, sizeof(struct msgbufServ), 0);
 	}
-	return x;
+	return number;
 }
 
 // Sector times as parameters
@@ -27,11 +28,11 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 	for(i=1;i<size;i++){ // Write in pipe all available numbers
 		write(pfdSrvDrv, &drivers[i-1], sizeof(int));
 	}
-	for(i=1;i<size;i++){ // Write in pipe all available numbers
+	for(i=1;i<size;i++){ // Read in pipe the PID of each drivers and stock in table
 		read(pfdDrvSrv, &adr_msg.tabD[i-1], sizeof(pid_t));
 	}
-	const char *weather = randomWeather(queue_id, adr_msg.tabD); // Weather Selection
-	adr_msg.tabD[22] = getpid();	
 	adr_msg.mtype = ADR;
+	adr_msg.tabD[22] = getpid();	
+	adr_msg.weather = randomWeather(queue_id, adr_msg.tabD); // Weather Selection, Write on MQ for everyone the weather
 	msgsnd(queue_id, &adr_msg, sizeof(struct TmsgbufAdr), 0);
 }
