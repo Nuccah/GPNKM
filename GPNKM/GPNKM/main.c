@@ -14,14 +14,14 @@ int main (int argc, char *argv[])
 	TmsgbufServ srv_msg;					 // Creation de msg queue
 	TmsgbufPilot pilot_msg;					 // Creation de msg queue
 	TmsgbufAdr adr_msg;
-	forked = fork(); // Premier Fork (Server, Afficheur)
-	if (forked < 0) {
+	pid_t process_id = fork(); // Premier Fork (Server, Afficheur)
+	if (process_id < 0) {
 		perror("Error while attempting Fork (Server/Afficheur de Resultat)");
 		exit(19);
 	}
 
 	//Afficheur (Parent)//
-	else if (forked > 0) {
+	else if (process_id > 0) {
 		fflush(stdout);
 		msgrcv(queue_id, &adr_msg, sizeof(struct TmsgbufAdr), ADR, 0);
 //		int i;
@@ -34,26 +34,21 @@ int main (int argc, char *argv[])
 		// DAEMON CODE START //
 		daemonize();
 		// PROCESS NOW A DAEMON //
-		int pfdSrvDrv[2]; 	// Creation des pipes entre Serveur et les Pilotes
-		int pfdDrvSrv[2];	// Creation des pipes entre Serveur et les Pilotes
-		pipe(pfdSrvDrv);		// Creation des pipes entre Serveur et les Pilotes// Creation des pipes entre Serveur et les Pilotes
-		pipe(pfdDrvSrv);
-		int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
-		int forked2 = fork(); // Deuxieme Fork (Server, Pilot)
-		if (forked2 < 0) {
+		int pfdSrvDrv[2]; int pfdDrvSrv[2];	pipe(pfdSrvDrv); pipe(pfdDrvSrv);	// Creation des pipes entre Serveur et les Pilotes
+		process_id = fork(); // Deuxieme Fork (Server, Pilot)
+		if (process_id < 0) {
 			perror("Error while attempting Fork (Server/Pilot)");
 			exit(19);
 		}
 		//Pilots (Child)//
-		else if (forked2 == 0) {
+		else if (process_id == 0) {
 			close(pfdSrvDrv[1]);close(pfdDrvSrv[0]); // Close unused write/read ends of respective pipes
-			int number = forkPilots(sizeof(drivers)/sizeof(int), pfdSrvDrv[0], pfdDrvSrv[1]);
-			pilot(number, queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg);
+			int number = forkPilots(pfdSrvDrv[0], pfdDrvSrv[1]); // Pilot forking function
+			pilot(number, queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg); // Fonction principale des pilotes
 		}
 		//Server (Parent)
 		else{
-			int size = (sizeof(drivers) / sizeof(int))+1;
-			server(queue_id, size, pfdSrvDrv[1], pfdDrvSrv[0], drivers, adr_msg);
+			server(queue_id, pfdSrvDrv[1], pfdDrvSrv[0], adr_msg); // Fonction principale du serveur
 			int stat = SIGTERM;
 			wait(&stat); // Wait for any process returning SIGTERM
 		}
@@ -83,6 +78,7 @@ void daemonize(){
 	close(STDERR_FILENO);
 }
 
+/*
 void tester(){
 	int Drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10};
 	srand ( time(NULL) );
@@ -103,7 +99,7 @@ void tester(){
 	printf("Sector 3 Time: %.2lf \n", time3);
 	printf("Laptime: %.2lf \n", lap1);
 }
-
+*/
 
 
 

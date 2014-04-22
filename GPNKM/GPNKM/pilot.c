@@ -1,9 +1,9 @@
 #include "pilot.h"
 
-int forkPilots(int nPilots, int pfdSrvDrv, int pfdDrvSrv){
+int forkPilots(int pfdSrvDrv, int pfdDrvSrv){
 	int i;
 	pid_t pid; // ????
-	for(i=0;i<(nPilots);i++){ // Multifork des 22 pilotes
+	for(i=0;i<DRIVERS;i++){ // Multifork des 22 pilotes
 		pid = fork();
       	if(pid == -1){
          	printf("Error while attempting Fork (Pilot/Pilot)");

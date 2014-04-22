@@ -3,9 +3,9 @@
 #include "structures.h"
 #include "constants.h"
 
-const char * randomWeather();
+const char * randomWeather(int queue_id, pid_t *tabD);
 double lapTime(double s1, double s2, double s3);
-void server(int queue_id, int size, int pfdSrvDrv, int pfdDrvSrv, int *drivers, TmsgbufAdr adr_msg);
+void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg);
 
 
 

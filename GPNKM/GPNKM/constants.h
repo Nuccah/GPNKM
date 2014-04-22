@@ -19,6 +19,9 @@
 #define SERVER 100
 #define ADR 101
 
+/* GENERAL */
+#define DRIVERS 22
+
 /* weather constants */
 #define DRY 1.0
 #define WET 0.9
