@@ -18,3 +18,18 @@ const char * randomWeather(){
 double lapTime(double s1, double s2, double s3){
     return (s1 + s2 + s3);
 }
+
+void server(int queue_id, int size, int pfdSrvDrv, int pfdDrvSrv, int *drivers, TmsgbufAdr adr_msg){
+	int i;
+	const char *weather = randomWeather(); // Weather Selection
+	//printf("Weather: %s \n", weather);
+	for(i=1;i<size;i++){ // Write in pipe all available numbers
+		write(pfdSrvDrv, &drivers[i-1], sizeof(int));
+	}
+	for(i=1;i<size;i++){ // Write in pipe all available numbers
+		read(pfdDrvSrv, &adr_msg.tabD[i-1], sizeof(pid_t));
+	}
+	adr_msg.tabD[22] = getpid();	
+	adr_msg.mtype = ADR;
+	msgsnd(queue_id, &adr_msg, sizeof(struct TmsgbufAdr), 0);
+}

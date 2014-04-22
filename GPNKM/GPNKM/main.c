@@ -5,16 +5,15 @@
 #include "pilot.h"
 
 void tester();
+void daemonize();
 
 int main (int argc, char *argv[])
 {
 	int forked;
 	int queue_id = msgget(42, 0666 | IPC_CREAT); // Creation de msg queue
-	struct msgbufSrv* srv_msg;					 // Creation de msg queue
-	struct msgbufPilot pilot_msg;					 // Creation de msg queue
-	struct msgbufPilot pilot_msg2;
+	TmsgbufServ srv_msg;					 // Creation de msg queue
+	TmsgbufPilot pilot_msg;					 // Creation de msg queue
 	TmsgbufAdr adr_msg;
-	int rcRcv, rcSnd;							 // Creation de msg queue
 	forked = fork(); // Premier Fork (Server, Afficheur)
 	if (forked < 0) {
 		perror("Error while attempting Fork (Server/Afficheur de Resultat)");
@@ -25,36 +24,15 @@ int main (int argc, char *argv[])
 	else if (forked > 0) {
 		fflush(stdout);
 		msgrcv(queue_id, &adr_msg, sizeof(struct TmsgbufAdr), ADR, 0);
-		int i;
-		for(i = 0; i < 23; i++) printf("Pid %d: %d\n", i, adr_msg.tabD[i]);
-		printf("1\n");
-		printf("2\n");
-//			rcRcv = msgrcv(queue_id, &pilot_msg2, sizeof(struct msgbufPilot), ADR, 0);	
-//			printf("Number Received: %d", pilot_msg2.car.num);
+//		int i;
+//		for(i = 0; i < 23; i++) printf("Pid %d: %d\n", i, adr_msg.tabD[i]);
 		showMainMenu(queue_id, adr_msg);
 	}
 	/*Tampon Serveur (Child)*/
 	else{
 		
 		// DAEMON CODE START //
-		pid_t process_id = 0;
- 		pid_t sid = 0;
- 		process_id = fork();
- 		if (process_id < 0)
- 			exit(EXIT_FAILURE);
-		if (process_id > 0)
-		{
-			int status = SIGTERM;
-			wait(&status); // Wait for any process returning SIGTERM
-			exit(EXIT_SUCCESS);
-		}
-		umask(0);
-		sid = setsid(); // Set the session id (group process id)
-		if(sid < 0)	exit(EXIT_FAILURE);
-		chdir("/tmp"); // Better to run daemon processes in another dir than root
-		close(STDIN_FILENO);
-		close(STDOUT_FILENO);
-		close(STDERR_FILENO);
+		daemonize();
 		// PROCESS NOW A DAEMON //
 		int pfdSrvDrv[2]; 	// Creation des pipes entre Serveur et les Pilotes
 		int pfdDrvSrv[2];	// Creation des pipes entre Serveur et les Pilotes
@@ -70,35 +48,39 @@ int main (int argc, char *argv[])
 		else if (forked2 == 0) {
 			close(pfdSrvDrv[1]);close(pfdDrvSrv[0]); // Close unused write/read ends of respective pipes
 			int number = forkPilots(sizeof(drivers)/sizeof(int), pfdSrvDrv[0], pfdDrvSrv[1]);
-			struct TCar pilot = {0};
-			pilot.num = number; 
-			pilot_msg.mtype = SERVER;
-			pilot_msg.car = pilot;
-			rcSnd = msgsnd(queue_id, &pilot_msg, sizeof(struct msgbufPilot), 0);
-			do{
-				sleep(5); // FUCKING LOOP TO DELETE ASAP!!!!!
-			} while(1);
+			pilot(number, queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg);
 		}
-		//Server (Parent) *DEFUNCT*//
+		//Server (Parent)
 		else{
-			int i;
-			const char *weather = randomWeather(); // Weather Selection
-			//printf("Weather: %s \n", weather);
-			for(i=1;i<(sizeof(drivers) / sizeof(int))+1;i++){ // Write in pipe all available numbers
-				write(pfdSrvDrv[1], &drivers[i-1], sizeof(int));
-			}
-			for(i=1;i<(sizeof(drivers) / sizeof(int))+1;i++){ // Write in pipe all available numbers
-				read(pfdDrvSrv[0], &adr_msg.tabD[i-1], sizeof(pid_t));
-			}
-			adr_msg.tabD[22] = forked2;	
-			adr_msg.mtype = ADR;
-			msgsnd(queue_id, &adr_msg, sizeof(struct TmsgbufAdr), 0);
+			int size = (sizeof(drivers) / sizeof(int))+1;
+			server(queue_id, size, pfdSrvDrv[1], pfdDrvSrv[0], drivers, adr_msg);
 			int stat = SIGTERM;
 			wait(&stat); // Wait for any process returning SIGTERM
 		}
 	}
 //	tester();
 	return 0;
+}
+
+void daemonize(){
+	pid_t process_id = 0;
+ 	pid_t sid = 0;
+ 	process_id = fork();
+ 	if (process_id < 0)
+ 		exit(EXIT_FAILURE);
+	if (process_id > 0)
+	{
+		int status = SIGTERM;
+		wait(&status); // Wait for any process returning SIGTERM
+		exit(EXIT_SUCCESS);
+	}
+	umask(0);
+	sid = setsid(); // Set the session id (group process id)
+	if(sid < 0)	exit(EXIT_FAILURE);
+	chdir("/tmp"); // Better to run daemon processes in another dir than root
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
 }
 
 void tester(){

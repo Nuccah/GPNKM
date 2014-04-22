@@ -25,6 +25,17 @@ int forkPilots(int nPilots, int pfdSrvDrv, int pfdDrvSrv){
 	exit(EXIT_SUCCESS);
 }
 
+void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg){
+	struct TCar pilot = {0};
+	pilot.num = number; 
+	pilot_msg.mtype = SERVER;
+	pilot_msg.car = pilot;
+	msgsnd(queue_id, &pilot_msg, sizeof(struct msgbufPilot), 0);
+	do{
+		sleep(5); // FUCKING LOOP TO DELETE ASAP!!!!!
+	}while(1);
+}
+
 // Random number function
 double randomNumber(double min, double max){
 	srand(time(NULL));
