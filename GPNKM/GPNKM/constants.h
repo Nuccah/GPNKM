@@ -14,6 +14,10 @@
 #include <sys/msg.h>
 #include "errorControl.h"
 
+//MQ ID's
+#define SERVER 100
+#define ADR 101
+
 /* weather constants */
 #define DRY 1.0
 #define WET 0.9

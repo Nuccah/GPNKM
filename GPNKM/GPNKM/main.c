@@ -34,7 +34,6 @@ int main (int argc, char *argv[])
 	}
 	/*Tampon Serveur (Child)*/
 	else{
-
 		// DAEMON CODE START //
 		pid_t process_id = 0;
  		pid_t sid = 0;
@@ -72,9 +71,12 @@ int main (int argc, char *argv[])
 			int number = forkPilots(sizeof(drivers)/sizeof(int), pfdSrvDrv[0], pfdDrvSrv[1]);
 			struct TCar pilot = {0};
 			pilot.num = number; 
-			pilot_msg.mtype = 1;
+			pilot_msg.mtype = 1; 
 			pilot_msg.car = pilot;
 			rcSnd = msgsnd(queue_id, &pilot_msg, sizeof(struct msgbufPilot), 0);
+			do{
+				sleep(5);
+			}while(1);
 		}
 		//Server (Parent) *DEFUNCT*//
 		else{
@@ -85,9 +87,12 @@ int main (int argc, char *argv[])
 			for(i=1;i<(sizeof(drivers) / sizeof(int))+1;i++){ // Write in pipe all available numbers
 				write(pfdSrvDrv[1], &drivers[i-1], sizeof(int));
 			}
-			for(i=1;i<(sizeof(drivers) / sizeof(int))+1;i++){ // Write in pipe all available numbers
+			for(i=1;i<(sizeof(drivers) / sizeof(int))+1;i++){ // Read in pipe all driver pids
 				read(pfdDrvSrv[0], &pidDrivers[i-1], sizeof(int));
 			}
+			do{
+				sleep(5);
+			}while(1);
 		}
 		// Temporary Loop //
 		do{

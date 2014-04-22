@@ -80,6 +80,11 @@ struct msgbufServ {
 	int mInt;  /* message data */
 };
 
+struct msgbufAdR { // Afficheur de Resultat
+	long mtype;     /* message type, must be > 0 */
+	int tabD[22];  /* message data */
+};
+
 struct msgbufPilot {
 	long mtype;     /* message type, must be > 0 */
 	struct TCar car;  /* message data */
