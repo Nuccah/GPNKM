@@ -11,9 +11,6 @@
 
 /* sector type */
 typedef struct TSect {
-	bool retired; /* is retired (true) */
-	bool crashed; /* is crashed (true) */
-	bool pitstop; /* is into the pitstop (true) */
 	double stime;
 	double speed;
 } TSect;
@@ -32,7 +29,6 @@ typedef struct TCar {
 	bool pitstop; /* is into the pitstop (true) */
 	int num;
 	int start_position;
-	int position;
 	int tires; /* sets of tires */
 	double avgSpeed;
 	double fuelStock; /* fuel stock in liter */

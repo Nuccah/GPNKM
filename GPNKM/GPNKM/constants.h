@@ -33,8 +33,8 @@
 #define WETS 3
 
 /* random loss percentage constants (by lap)*/
-#define CRASH 0.002
-#define BREAK 0.04
+#define CRASH 0.001
+#define BREAK 0.005
 
 /* sector length (in meters) */
 #define S1 2300
@@ -52,8 +52,8 @@
 
 /* fuel data (in liter) */
 #define FUELSMAX 100.0
-#define FUELSMIN 90.0
-#define FUELCMAX 2.0
-#define FUELCMIN 0.5
+#define FUELSMIN 95.0
+#define FUELCMAX 0.75
+#define FUELCMIN 0.35
 
 #endif

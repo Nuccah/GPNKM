@@ -32,7 +32,7 @@ int main (int argc, char *argv[])
 	else{
 		
 		// DAEMON CODE START //
-		daemonize();
+	//	daemonize();
 		// PROCESS NOW A DAEMON //
 		int pfdSrvDrv[2]; int pfdDrvSrv[2];	pipe(pfdSrvDrv); pipe(pfdDrvSrv);	// Creation des pipes entre Serveur et les Pilotes
 		process_id = fork(); // Deuxieme Fork (Server, Pilot)
