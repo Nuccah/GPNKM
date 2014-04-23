@@ -4,8 +4,8 @@
 #include "constants.h"
 
 int chooseTires(int weather, TCar pilot);
-bool crashed();
-bool damaged();
+bool crashed(pid_t pid);
+bool damaged(pid_t pid);
 double randomNumber(double min, double max);
 double speedWeather(const char *weather);
 double sectorTime(double speed, int sector);

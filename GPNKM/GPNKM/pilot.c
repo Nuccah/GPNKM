@@ -33,23 +33,23 @@ void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot 
 	msgrcv(queue_id, &weatherInfo, sizeof(struct msgbufServ), pid, 0);
 	pilot.tires = chooseTires(weatherInfo.mInt, pilot);
 	do{
-	/*	usleep((pilot.num*100)/4);
-		pilot.retired = damaged();
-		pilot.crashed = crashed();
+		sleep(3);
+		pilot.retired = damaged(pid);
+		pilot.crashed = crashed(pid);
 		if ((pilot.retired) || (pilot.crashed))
 			printf("%d : BOOM\n", getpid());
 		else
-			printf("%d : Not crashed or retired\n", getpid());*/
+			printf("%d : Not crashed or retired\n", getpid());
 	}while(1);
 }
 
-bool crashed(){
-	srand(time(NULL));
+bool crashed(pid_t pid){
+	srand(pid+time(NULL));
 	return (rand()/(RAND_MAX+1.0) < CRASH);
 }
 
-bool damaged(){
-	srand(time(NULL));
+bool damaged(pid_t pid){
+	srand(pid+time(NULL));
 	return (rand()/(RAND_MAX+1.0) < BREAK);
 }
 
