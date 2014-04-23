@@ -37,9 +37,9 @@ void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot 
 		pilot.retired = damaged(pid);
 		pilot.crashed = crashed(pid);
 		if ((pilot.retired) || (pilot.crashed))
-			printf("%d : BOOM\n", getpid());
+			printf("%d : BOOM\n", pid);
 		else
-			printf("%d : Not crashed or retired\n", getpid());
+			printf("%d : Not crashed or retired\n", pid);
 	}while(1);
 }
 
