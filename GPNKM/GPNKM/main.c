@@ -14,6 +14,8 @@ int main (int argc, char *argv[])
 	TmsgbufServ srv_msg;					 // Creation de msg queue
 	TmsgbufPilot pilot_msg;					 // Creation de msg queue
 	TmsgbufAdr adr_msg;
+	printf("111111\n");
+
 	pid_t process_id = fork(); // Premier Fork (Server, Afficheur)
 	if (process_id < 0) {
 		perror("Error while attempting Fork (Server/Afficheur de Resultat)");
@@ -30,10 +32,11 @@ int main (int argc, char *argv[])
 	}
 	/*Tampon Serveur (Child)*/
 	else{
-		
 		// DAEMON CODE START //
 	//	daemonize();
 		// PROCESS NOW A DAEMON //
+		int gsmID = shmget(IPC_PRIVATE, 22*sizeof(TCar), IPC_CREAT | PERMS); // Creation Global Shared Memory
+		TCar *tabCar = (void *) shmat(gsmID, NULL, 0); // Creation table shared by server and pilots
 		int pfdSrvDrv[2]; int pfdDrvSrv[2];	pipe(pfdSrvDrv); pipe(pfdDrvSrv);	// Creation des pipes entre Serveur et les Pilotes
 		process_id = fork(); // Deuxieme Fork (Server, Pilot)
 		if (process_id < 0) {

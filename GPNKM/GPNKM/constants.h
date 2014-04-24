@@ -9,11 +9,16 @@
 #include <time.h>
 #include <math.h>
 #include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #include <stdbool.h>
 #include <fcntl.h>
 #include <sys/msg.h>
 #include <signal.h>
 #include "errorControl.h"
+
+// Permission to Shared Memory
+#define PERMS 0666
 
 //MQ ID's
 #define SERVER 100
