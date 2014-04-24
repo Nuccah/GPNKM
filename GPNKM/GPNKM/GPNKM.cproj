@@ -43,5 +43,6 @@
     <None Include="afficheur.h" />
     <None Include="constants.h" />
     <None Include="errorControl.h" />
+    <None Include="shmdef.h" />
   </ItemGroup>
 </Project>
