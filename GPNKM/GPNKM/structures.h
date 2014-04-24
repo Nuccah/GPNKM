@@ -17,6 +17,7 @@ typedef struct TSect {
 
 /* lap type */
 typedef struct TLap {
+	int lnum;
 	double ltime;
 	double averTime;
 	TSect tabSect[3];
@@ -24,6 +25,7 @@ typedef struct TLap {
 
 /* car type */
 typedef struct TCar {
+	const char * teamName;
 	bool retired; /* is retired (true) */
 	bool crashed; /* is crashed (true) */
 	bool pitstop; /* is into the pitstop (true) */
@@ -32,7 +34,6 @@ typedef struct TCar {
 	int tires; /* sets of tires */
 	double avgSpeed;
 	double fuelStock; /* fuel stock in liter */
-
 	TLap* lapTimes; /* it's a pointer beacause laps number depends of the race type (I suppose ^^) */
 } TCar;
  

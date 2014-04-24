@@ -27,14 +27,19 @@
 #define WET 0.9
 #define RAIN 0.75
 
-/* Tires Sets (x4) */
+/* Tire Constants (x4 for Sets) */
 #define SLICKS 13
 #define INTERMEDIATES 4
 #define WETS 3
+#define TIREWEARMAX 1.0 
+#define TIREWEARMIN 0.4
+#define TIREWEARLIMIT 10
+#define DRYFACTOR 2.5
+#define WETFACTOR 1.2
 
 /* random loss percentage constants (by lap)*/
-#define CRASH 0.001
-#define BREAK 0.005
+#define CRASH 0.0005
+#define BREAK 0.0015
 
 /* sector length (in meters) */
 #define S1 2300

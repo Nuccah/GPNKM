@@ -3,13 +3,14 @@
 #include "structures.h"
 #include "constants.h"
 
+bool crashed();
+bool damaged();
 int chooseTires(int weather, TCar pilot);
-bool crashed(pid_t pid);
-bool damaged(pid_t pid);
-double fuelConsumption(pid_t pid);
-double fuelStart(pid_t pid);
-double randomNumber(double min, double max, pid_t pid);
-double speedWeather(const char *weather, pid_t pid);
+double tireWear(int weather);
+double fuelConsumption();
+double fuelStart();
+double randomNumber(double min, double max);
+double speedWeather(const char *weather);
 double sectorTime(double speed, int sector);
 const char * getTeamName(int number);
 int forkPilots(int pfdSrvDrv, int pfdDrvSrv);
