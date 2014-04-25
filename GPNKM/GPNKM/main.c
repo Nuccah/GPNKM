@@ -46,8 +46,8 @@ int main (int argc, char *argv[])
 		//Pilots (Child)//
 		else if (process_id == 0) {
 			close(pfdSrvDrv[1]);close(pfdDrvSrv[0]); // Close unused write/read ends of respective pipes
-			int number = forkPilots(pfdSrvDrv[0], pfdDrvSrv[1]); // Pilot forking function
-			pilot(number, queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg); // Fonction principale des pilotes
+			forkPilots(queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg, tabCar); // Pilot forking function
+			//pilot(number, queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg); // Fonction principale des pilotes
 		}
 		//Server (Parent)
 		else{

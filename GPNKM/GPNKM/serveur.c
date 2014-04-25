@@ -6,6 +6,8 @@ int randomWeather(int queue_id, pid_t *tabD){
 	int number = (rand() % (7-1)) + 1;
 	int i;
 	TmsgbufServ weatherInfo;
+	if(number >= 4) number = 3;
+	else if(number >= 2) number = 2;
 	for(i=0; i<(DRIVERS-1); i++){
 		weatherInfo.mtype = tabD[i];
 		weatherInfo.mInt = number;

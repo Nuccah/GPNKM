@@ -60,8 +60,8 @@ void endOfProgram(int queue_id, TmsgbufAdr adr_msg)
 void weather(int number){
 	switch( number ) {
     	case 1: printf("It's a rainy day at the normally dry GPNKM track, drivers should prepare for a tough weekend!\n"); break;
-    	case 2:case 3: printf("The weather has been off and on, drivers need to be ready for a wet circuit!\n"); break;
-    	case 4:case 5:case 6: printf("It's a beautiful day at the GPNKM circuit, it is time to DRIVE!\n"); break;
+    	case 2: printf("The weather has been off and on, drivers need to be ready for a wet circuit!\n"); break;
+    	case 3: printf("It's a beautiful day at the GPNKM circuit, it is time to DRIVE!\n"); break;
 	}
 	return;
 }

@@ -1,10 +1,11 @@
 #include "pilot.h"
 
-int forkPilots(int pfdSrvDrv, int pfdDrvSrv){
+int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, TCar *tabCar){
 	int i;
 	pid_t pid; // ????
 	for(i=0;i<DRIVERS;i++){ // Multifork des 22 pilotes
 		pid = fork();
+
       	if(pid == -1){
          	printf("Error while attempting Fork (Pilot/Pilot)");
           	exit(EXIT_FAILURE);
@@ -15,7 +16,7 @@ int forkPilots(int pfdSrvDrv, int pfdDrvSrv){
 			srand((pidNum*10)+time(NULL));
           	read(pfdSrvDrv, &number, sizeof(int)); // First come first serve for driver numbers in pipe
           	write(pfdDrvSrv, &pidNum, sizeof(int)); // Write in pipe pilots PID for later kill
-          	return number;
+          	pilot(number, queue_id, pfdSrvDrv, pfdDrvSrv, pilot_msg, i, pidNum, tabCar);
        	}
     }
 	int status = 0;
@@ -23,10 +24,10 @@ int forkPilots(int pfdSrvDrv, int pfdDrvSrv){
 	exit(EXIT_SUCCESS);
 }
 
-void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg){
+void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, 
+			int table, pid_t pid, TCar *tabCar){
 	TmsgbufServ weatherInfo;
-	pid_t pid = getpid();
-	struct TCar pilot = {0};
+	TCar pilot = tabCar[table];
 	pilot.num = number;
 	pilot.teamName = getTeamName(pilot.num); 
 	pilot_msg.mtype = SERVER;
@@ -34,11 +35,11 @@ void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot 
 	pilot.fuelStock = fuelStart(pid);
 	msgsnd(queue_id, &pilot_msg, sizeof(struct msgbufPilot), 0);
 	msgrcv(queue_id, &weatherInfo, sizeof(struct msgbufServ), pid, 0);
-	pilot.tires = chooseTires(weatherInfo.mInt, pilot);
+	pilot.tires = chooseTires(weatherInfo.mInt);
 	double tireStatus = 100;
 	int i = 0;
 	do{
-		sleep(1);
+		sleep(2);
 		if (damaged()){
 			pilot.retired = true;
 			printf("%d : Car damaged, retiring\n", pid);
@@ -63,9 +64,11 @@ void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot 
 				break;
 			}
 			tireStatus = 100;
-			printf("%d : Changing tires, %d remaining", pid, pilot.tires);
+			printf("\n%d : Changing tires, %d remaining\n", pid, pilot.tires);
 		}
-		printf("%d : Car Survived Lap %d with %.2lf of fuel remaining\n", pid, i, pilot.fuelStock);
+		double speed = speedWeather(weatherInfo.mInt);
+		printf("%d : Car Survived Lap %d with %.2lf of fuel remaining\n"
+				"\tSector time: %.2lf and speed: %.2lf\n", pid, i, pilot.fuelStock, sectorTime(speed, i), speed);
 		i++;
 	}while(i < 165);
 }
@@ -78,11 +81,11 @@ bool damaged(){
 	return ((rand()/(RAND_MAX+1.0)) < BREAK);
 }
 
-int chooseTires(int weather, TCar pilot){
+int chooseTires(int weather){
 	switch( weather ) {
     	case 1: return WETS;
-    	case 2:case 3: return INTERMEDIATES;
-    	case 4:case 5:case 6: return SLICKS;
+    	case 2: return INTERMEDIATES;
+    	case 3: return SLICKS;
 	}
 }
 
@@ -105,23 +108,24 @@ double fuelStart(){
 double tireWear(int weather){
     switch( weather ) {
     	case 1: return randomNumber(TIREWEARMIN, TIREWEARMAX);
-    	case 2:case 3: return randomNumber((TIREWEARMIN*WETFACTOR), (TIREWEARMAX*WETFACTOR));
-    	case 4:case 5:case 6: return randomNumber((TIREWEARMIN*DRYFACTOR), (TIREWEARMAX*DRYFACTOR));
+    	case 2: return randomNumber((TIREWEARMIN*WETFACTOR), (TIREWEARMAX*WETFACTOR));
+    	case 3: return randomNumber((TIREWEARMIN*DRYFACTOR), (TIREWEARMAX*DRYFACTOR));
 	}
 }
 
 // Speed and Weather (in string form) as parameters
 // Returns modified speed according to weather
-double speedWeather(const char *weather){
+double speedWeather(int weather){
     double speed = randomNumber(MINSPEED, MAXSPEED);
-	printf("Speed: %.2lf \n", speed);
     double factor;
-    if (strcmp(weather, "DRY") == 0)
-    	factor = DRY;
-	if (strcmp(weather, "WET") == 0)
-    	factor = WET;
-	if (strcmp(weather, "RAIN") == 0)
-    	factor = RAIN;
+    switch(weather){
+    	case 3: factor = DRY;
+    			break;
+    	case 2: factor = WET;
+				break;
+		case 1: factor = RAIN;
+				break;
+	}
     return (speed * factor);
 }
 

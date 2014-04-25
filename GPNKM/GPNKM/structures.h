@@ -34,7 +34,7 @@ typedef struct TCar {
 	int tires; /* sets of tires */
 	double avgSpeed;
 	double fuelStock; /* fuel stock in liter */
-	TLap* lapTimes; /* it's a pointer beacause laps number depends of the race type (I suppose ^^) */
+	TLap* lapTimes; /* it's a pointer because laps number depends of the race type (I suppose ^^) */
 } TCar;
  
 //TODO complete all the race types!
