@@ -1,7 +1,6 @@
 #ifndef H_PILOT
 #define H_PILOT
 #include "structures.h"
-#include "constants.h"
 
 bool crashed();
 bool damaged();
@@ -13,8 +12,9 @@ double randomNumber(double min, double max);
 double speedWeather(int weather);
 double sectorTime(double speed, int sector);
 const char * getTeamName(int number);
-int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, TCar *tabCar);
+int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg,
+			  TCar *tabCar, int sem_id);
 void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, 
-			int table, pid_t pid, TCar *tabCar);
+			int table, pid_t pid, TCar *tabCar, int sem_id);
 
 #endif

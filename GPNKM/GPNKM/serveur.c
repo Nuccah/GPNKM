@@ -22,7 +22,7 @@ double lapTime(double s1, double s2, double s3){
     return (s1 + s2 + s3);
 }
 
-void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
+void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, TCar *tabCar, int sem_id){
 	int i;
 	int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
 	int size = (sizeof(drivers) / sizeof(int))+1;
@@ -37,4 +37,23 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 	adr_msg.tabD[22] = getpid();	
 	adr_msg.weather = randomWeather(queue_id, adr_msg.tabD); // Weather Selection, Write on MQ for everyone the weather
 	msgsnd(queue_id, &adr_msg, sizeof(struct TmsgbufAdr), 0);
+	TCar tabRead[22];
+	do {
+		sleep(2);
+		int k;
+		printf("\n\n[Server] begins table read!!\n\n");
+		for(k = 0; k < 22; k++){
+			if(isTabCarReadable(sem_id)) tabRead[k] = tabCar[k];
+			else k--;
+			printf("\n\n[Server] Tires and speed for car %d: %d - %.2lf\n\n", 
+					tabRead[k].num, tabRead[k].tires, tabRead[k].avgSpeed); 
+		}
+		printf("\n\n[Server] table read done!!\n\n");
+	} while(1);
+}
+
+// Check if shared mem is readable
+bool isTabCarReadable(int sem_id){
+	if(semctl(sem_id, 0, GETVAL, 1) == 1) return true;
+	return false;
 }

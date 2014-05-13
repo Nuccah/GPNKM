@@ -35,6 +35,7 @@
     <Compile Include="pilot.c" />
     <Compile Include="serveur.c" />
     <Compile Include="afficheur.c" />
+    <Compile Include="general.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="structures.h" />
@@ -43,6 +44,6 @@
     <None Include="afficheur.h" />
     <None Include="constants.h" />
     <None Include="errorControl.h" />
-    <None Include="shmdef.h" />
+    <None Include="main.h" />
   </ItemGroup>
 </Project>

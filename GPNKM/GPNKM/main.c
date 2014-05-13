@@ -1,11 +1,4 @@
-#include "structures.h"
-#include "constants.h"
-#include "serveur.h"
-#include "afficheur.h"
-#include "pilot.h"
-
-void tester();
-void daemonize();
+#include "main.h"
 
 int main (int argc, char *argv[])
 {
@@ -35,8 +28,20 @@ int main (int argc, char *argv[])
 		// DAEMON CODE START //
 	//	daemonize();
 		// PROCESS NOW A DAEMON //
+		//***********//
+		//*SEMA INIT*//
+		//***********//
+		key_t sem_key = ftok(argv[0], 'P'); // Sema Key generated
+		int sem_id = semget(sem_key, 1, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
+		semctl(sem_id, 0, SETVAL, 1); // init all sema's at 1
+		//*****************//
+		//*SHARED MEM INIT*//
+		//*****************//
 		int gsmID = shmget(IPC_PRIVATE, 22*sizeof(TCar), IPC_CREAT | PERMS); // Creation Global Shared Memory
 		TCar *tabCar = (void *) shmat(gsmID, NULL, 0); // Creation table shared by server and pilots
+		//***********//
+		//*PIPE INIT*//
+		//***********//
 		int pfdSrvDrv[2]; int pfdDrvSrv[2];	pipe(pfdSrvDrv); pipe(pfdDrvSrv);	// Creation des pipes entre Serveur et les Pilotes
 		process_id = fork(); // Deuxieme Fork (Server, Pilot)
 		if (process_id < 0) {
@@ -46,12 +51,12 @@ int main (int argc, char *argv[])
 		//Pilots (Child)//
 		else if (process_id == 0) {
 			close(pfdSrvDrv[1]);close(pfdDrvSrv[0]); // Close unused write/read ends of respective pipes
-			forkPilots(queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg, tabCar); // Pilot forking function
+			forkPilots(queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg, tabCar, sem_id); // Pilot forking function
 			//pilot(number, queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg); // Fonction principale des pilotes
 		}
 		//Server (Parent)
 		else{
-			server(queue_id, pfdSrvDrv[1], pfdDrvSrv[0], adr_msg); // Fonction principale du serveur
+			server(queue_id, pfdSrvDrv[1], pfdDrvSrv[0], adr_msg, tabCar, sem_id); // Fonction principale du serveur
 			int stat = SIGTERM;
 			wait(&stat); // Wait for any process returning SIGTERM
 		}

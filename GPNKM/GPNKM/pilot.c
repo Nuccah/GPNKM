@@ -1,6 +1,6 @@
 #include "pilot.h"
 
-int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, TCar *tabCar){
+int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, TCar *tabCar, int sem_id){
 	int i;
 	pid_t pid; // ????
 	for(i=0;i<DRIVERS;i++){ // Multifork des 22 pilotes
@@ -16,7 +16,7 @@ int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_ms
 			srand((pidNum*10)+time(NULL));
           	read(pfdSrvDrv, &number, sizeof(int)); // First come first serve for driver numbers in pipe
           	write(pfdDrvSrv, &pidNum, sizeof(int)); // Write in pipe pilots PID for later kill
-          	pilot(number, queue_id, pfdSrvDrv, pfdDrvSrv, pilot_msg, i, pidNum, tabCar);
+          	pilot(number, queue_id, pfdSrvDrv, pfdDrvSrv, pilot_msg, i, pidNum, tabCar, sem_id);
        	}
     }
 	int status = 0;
@@ -25,7 +25,7 @@ int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_ms
 }
 
 void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, 
-			int table, pid_t pid, TCar *tabCar){
+			int table, pid_t pid, TCar *tabCar, int sem_id){	
 	TmsgbufServ weatherInfo;
 	TCar pilot = tabCar[table];
 	pilot.num = number;
@@ -36,6 +36,9 @@ void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot 
 	msgsnd(queue_id, &pilot_msg, sizeof(struct msgbufPilot), 0);
 	msgrcv(queue_id, &weatherInfo, sizeof(struct msgbufServ), pid, 0);
 	pilot.tires = chooseTires(weatherInfo.mInt);
+	semDown(sem_id);
+	tabCar[table] = pilot;
+	semUp(sem_id);
 	double tireStatus = 100;
 	int i = 0;
 	do{
@@ -67,9 +70,13 @@ void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot 
 			printf("\n%d : Changing tires, %d remaining\n", pid, pilot.tires);
 		}
 		double speed = speedWeather(weatherInfo.mInt);
+		pilot.avgSpeed = speed;
 		printf("%d : Car Survived Lap %d with %.2lf of fuel remaining\n"
 				"\tSector time: %.2lf and speed: %.2lf\n", pid, i, pilot.fuelStock, sectorTime(speed, i), speed);
 		i++;
+		semDown(sem_id);
+		tabCar[table] = pilot;
+		semUp(sem_id);
 	}while(i < 165);
 }
 

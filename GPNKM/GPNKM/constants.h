@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/sem.h>
 #include <stdbool.h>
 #include <fcntl.h>
 #include <sys/msg.h>

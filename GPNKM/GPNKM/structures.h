@@ -87,4 +87,11 @@ typedef struct msgbufPilot {
 	long mtype;     /* message type, must be > 0 */
 	struct TCar car;  /* message data */
 } TmsgbufPilot;
+
+// To use when you are going to work in shared memo
+void semDown(int sem_id);
+
+// To use when you finish your work in shared memo
+void semUp(int sem_id);
+
 #endif
