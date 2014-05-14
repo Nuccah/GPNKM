@@ -7,7 +7,15 @@ int main (int argc, char *argv[])
 	TmsgbufServ srv_msg;					 // Creation de msg queue
 	TmsgbufPilot pilot_msg;					 // Creation de msg queue
 	TmsgbufAdr adr_msg;
-	printf("111111\n");
+
+	key_t sem_DispSrv_key = ftok(argv[0], 'R');
+	int sem_DispSrv = semget(sem_DispSrv_key, 2, IPC_CREAT | PERMS);
+	semctl(sem_DispSrv, DISP_WRITE, SETVAL, 1);
+	semctl(sem_DispSrv, SRV_WRITE, SETVAL, 1);
+
+	key_t shm_DispSrv_key = ftok(argv[0], 'C');
+	int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), IPC_CREAT | PERMS); // Creation com display server shm
+	TSharedStock *listStock = (void *) shmat(shm_DispSrv, NULL, 0); // Contains table cars AND race type from display
 
 	pid_t process_id = fork(); // Premier Fork (Server, Afficheur)
 	if (process_id < 0) {
@@ -19,9 +27,8 @@ int main (int argc, char *argv[])
 	else if (process_id > 0) {
 		fflush(stdout);
 		msgrcv(queue_id, &adr_msg, sizeof(struct TmsgbufAdr), ADR, 0);
-//		int i;
-//		for(i = 0; i < 23; i++) printf("Pid %d: %d\n", i, adr_msg.tabD[i]);
-		showMainMenu(queue_id, adr_msg);
+		show_success("Display", "Server connected");
+		showMainMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv);
 	}
 	/*Tampon Serveur (Child)*/
 	else{
@@ -31,14 +38,23 @@ int main (int argc, char *argv[])
 		//***********//
 		//*SEMA INIT*//
 		//***********//
-		key_t sem_key = ftok(argv[0], 'P'); // Sema Key generated
-		int sem_id = semget(sem_key, 1, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
-		semctl(sem_id, 0, SETVAL, 1); // init all sema's at 1
+		key_t sem_race_key = ftok(argv[0], 'P'); // Sema Key generated
+		int sem_race = semget(sem_race_key, 1, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
+		semctl(sem_race, 0, SETVAL, 1); // init all sema's at 1
+
+		key_t sem_type_key = ftok(argv[0], 'Q');
+		int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
+		semctl(sem_type, 0, SETVAL, 1);
 		//*****************//
 		//*SHARED MEM INIT*//
 		//*****************//
-		int gsmID = shmget(IPC_PRIVATE, 22*sizeof(TCar), IPC_CREAT | PERMS); // Creation Global Shared Memory
-		TCar *tabCar = (void *) shmat(gsmID, NULL, 0); // Creation table shared by server and pilots
+		key_t shm_race_key = ftok(argv[0], 'A');
+		int shm_race = shmget(shm_race_key, 22*sizeof(TCar), IPC_CREAT | PERMS); // Creation Race Shared Memory
+		TCar *tabCar = (void *) shmat(shm_race, NULL, 0); // Creation table shared by server and pilots
+
+		key_t shm_type_key = ftok(argv[0], 'B');
+		int shm_type = shmget(shm_type_key, sizeof(int), IPC_CREAT | PERMS); // Creation Race type shm
+		int *raceType = (void *) shmat(shm_type, NULL, 0);
 		//***********//
 		//*PIPE INIT*//
 		//***********//
@@ -51,16 +67,23 @@ int main (int argc, char *argv[])
 		//Pilots (Child)//
 		else if (process_id == 0) {
 			close(pfdSrvDrv[1]);close(pfdDrvSrv[0]); // Close unused write/read ends of respective pipes
-			forkPilots(queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg, tabCar, sem_id); // Pilot forking function
+			forkPilots(queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg, tabCar, sem_race); // Pilot forking function
 			//pilot(number, queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg); // Fonction principale des pilotes
 		}
 		//Server (Parent)
 		else{
-			server(queue_id, pfdSrvDrv[1], pfdDrvSrv[0], adr_msg, tabCar, sem_id); // Fonction principale du serveur
+			server(queue_id, pfdSrvDrv[1], pfdDrvSrv[0], adr_msg, tabCar, sem_race); // Fonction principale du serveur
 			int stat = SIGTERM;
 			wait(&stat); // Wait for any process returning SIGTERM
 		}
+		semctl(sem_race, 0, IPC_RMID, NULL);
+		semctl(sem_type, 0, IPC_RMID, NULL);
+		shmdt(&shm_race);
+		shmdt(&shm_type);
+		shmctl(shm_race, IPC_RMID, NULL);
+		shmctl(shm_type, IPC_RMID, NULL);
 	}
+
 //	tester();
 	return 0;
 }

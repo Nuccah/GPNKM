@@ -22,7 +22,7 @@ double lapTime(double s1, double s2, double s3){
     return (s1 + s2 + s3);
 }
 
-void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, TCar *tabCar, int sem_id){
+void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, TCar *tabCar, int sem_race){
 	int i;
 	int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
 	int size = (sizeof(drivers) / sizeof(int))+1;
@@ -43,7 +43,7 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, TCar
 		int k;
 		printf("\n\n[Server] begins table read!!\n\n");
 		for(k = 0; k < 22; k++){
-			if(isTabCarReadable(sem_id)) tabRead[k] = tabCar[k];
+			if(isTabCarReadable(sem_race)) tabRead[k] = tabCar[k];
 			else k--;
 			printf("\n\n[Server] Tires and speed for car %d: %d - %.2lf\n\n", 
 					tabRead[k].num, tabRead[k].tires, tabRead[k].avgSpeed); 
@@ -53,7 +53,7 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, TCar
 }
 
 // Check if shared mem is readable
-bool isTabCarReadable(int sem_id){
-	if(semctl(sem_id, 0, GETVAL, 1) == 1) return true;
+bool isTabCarReadable(int sem_race){
+	if(semctl(sem_race, 0, GETVAL, 1) == 1) return true;
 	return false;
 }

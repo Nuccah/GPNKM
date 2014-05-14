@@ -11,15 +11,15 @@
 
 /* sector type */
 typedef struct TSect {
-	double stime;
-	double speed;
+	double stime; /* Time spent in one sector */
+	double speed; /* Speed during this sector */
 } TSect;
 
 /* lap type */
 typedef struct TLap {
 	int lnum;
-	double ltime;
-	double averTime;
+	double ltime; /* Time for a lap */
+	double averTime; /* Average time by secor for a lap */
 	TSect tabSect[3];
 } TLap;
 
@@ -27,12 +27,12 @@ typedef struct TLap {
 typedef struct TCar {
 	const char * teamName;
 	bool retired; /* is retired (true) */
+	bool damaged; /* is damaged (true) */
 	bool crashed; /* is crashed (true) */
-	bool pitstop; /* is into the pitstop (true) */
 	int num;
 	int start_position;
 	int tires; /* sets of tires */
-	double avgSpeed;
+	double avgSpeed; /* Average speed in real time */
 	double fuelStock; /* fuel stock in liter */
 	TLap* lapTimes; /* it's a pointer because laps number depends of the race type (I suppose ^^) */
 } TCar;
@@ -88,10 +88,20 @@ typedef struct msgbufPilot {
 	struct TCar car;  /* message data */
 } TmsgbufPilot;
 
+typedef struct TSharedStock{
+	int type;
+	struct TCar tabCar[22];
+} TSharedStock;
+
 // To use when you are going to work in shared memo
-void semDown(int sem_id);
+void semDown(int sem_id, int sem_channel);
 
 // To use when you finish your work in shared memo
-void semUp(int sem_id);
+void semUp(int sem_id, int sem_channel);
+
+void show_notice(const char *env, const char *msg);
+void show_error(const char *env, const char *msg);
+void show_debug(const char *env, const char *msg);
+void show_success(const char *env, const char *msg);
 
 #endif

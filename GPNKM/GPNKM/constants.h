@@ -16,10 +16,13 @@
 #include <fcntl.h>
 #include <sys/msg.h>
 #include <signal.h>
-#include "errorControl.h"
 
 // Permission to Shared Memory
 #define PERMS 0666
+
+/* Sema Channel */
+#define DISP_WRITE 0
+#define SRV_WRITE 1
 
 //MQ ID's
 #define SERVER 100

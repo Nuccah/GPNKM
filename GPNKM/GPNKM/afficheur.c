@@ -1,9 +1,10 @@
 #include "afficheur.h"
 
-void showTRMenu(int queue_id, TmsgbufAdr adr_msg)
+void showTRMenu(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, int sem_DispSrv, int shm_DispSrv)
 {
 	fflush(stdout);
 //	system ( "clear" );
+	printf("\033[36m");
 	printf ("Test Runs!\n");
 	printf ("-------------------------------------\n\n");
 	printf ("1 : Begin Test Run 1\n");
@@ -18,16 +19,18 @@ void showTRMenu(int queue_id, TmsgbufAdr adr_msg)
 		case '2' : printf("Test Run 2 Begin\n"); break;
 		case '3' : printf("Test Run 3 Begin\n"); break;
 		case '4' : printf("Show Results\n"); break;
-		case '0' : showMainMenu(queue_id, adr_msg); break;
-		default  : showTRMenu(queue_id, adr_msg); break;
+		case '0' : showMainMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
+		default  : showTRMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
 	}
+	printf("\033[0m");
 	fflush(stdin);
 }
 
-void showQualifMenu(int queue_id, TmsgbufAdr adr_msg)
+void showQualifMenu(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, int sem_DispSrv, int shm_DispSrv)
 {
 	fflush(stdout);
 	system ( "clear" );
+	printf("\033[36m");
 	printf ("Welcome to the worldest famous GPNKM!\n");
 	printf ("-------------------------------------\n\n");
 	printf ("1 : Begin Qualifier 1\n");
@@ -42,18 +45,22 @@ void showQualifMenu(int queue_id, TmsgbufAdr adr_msg)
 		case '2' : printf("Qualify Run 2 Begin\n"); break;
 		case '3' : printf("Qualify Run 3 Begin\n"); break;
 		case '4' : printf("Show Results of Qualifiers\n"); break;
-		case '0' : showMainMenu(queue_id, adr_msg); break;
-		default  : showQualifMenu(queue_id, adr_msg); break;
+		case '0' : showMainMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
+		default  : showQualifMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
 	}
+    printf("\033[0m");
 	fflush(stdin);
 }
 
-void endOfProgram(int queue_id, TmsgbufAdr adr_msg)
+void endOfProgram(int queue_id, TmsgbufAdr adr_msg, int sem_DispSrv, int shm_DispSrv)
 {
 	int i;
 	for(i = 0; i < 23; i++) kill(adr_msg.tabD[i], SIGTERM);
 	printf("All processes closed successfully\n");
 	msgctl(queue_id, IPC_RMID, NULL);
+	semctl(sem_DispSrv, 0, IPC_RMID, NULL);
+	shmdt(&shm_DispSrv);
+	shmctl(shm_DispSrv, IPC_RMID, NULL);
 	exit(EXIT_SUCCESS);
 }
 
@@ -66,10 +73,11 @@ void weather(int number){
 	return;
 }
 
-void showMainMenu(int queue_id, TmsgbufAdr adr_msg)
+void showMainMenu(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, int sem_DispSrv, int shm_DispSrv)
 {
 	fflush(stdout);
 	system ( "clear" );
+	printf("\033[36m");
 	printf ("Welcome to the worldest famous GPNKM!\n");
 	weather(adr_msg.weather);
 	printf ("-------------------------------------\n\n");
@@ -82,13 +90,14 @@ void showMainMenu(int queue_id, TmsgbufAdr adr_msg)
 	printf ("-------------------------------------\n\n");
 	switch(getchar())
 	{
-		case '1' : showTRMenu(queue_id, adr_msg); break;
-		case '2' : showQualifMenu(queue_id, adr_msg); break;
+		case '1' : showTRMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
+		case '2' : showQualifMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
 		case '3' : printf("Grand Prix Runs Begin\n"); break;
 		case '4' : printf("Show Results\n"); break;
 		case '5' : printf("Restart Grand Prix\n"); break;
-		case '0' : endOfProgram(queue_id, adr_msg);
-		default  : showMainMenu(queue_id, adr_msg); break;
+		case '0' : endOfProgram(queue_id, adr_msg, sem_DispSrv, shm_DispSrv);
+		default  : showMainMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
 	}
+	printf("\033[0m");
     fflush(stdin);
 }
