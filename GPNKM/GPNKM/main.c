@@ -27,7 +27,7 @@ int main (int argc, char *argv[])
 	else if (process_id > 0) {
 		fflush(stdout);
 		msgrcv(queue_id, &adr_msg, sizeof(struct TmsgbufAdr), ADR, 0);
-		show_success("Display", "Server connected");
+		show_success("Monitor", "Server connected");
 		showMainMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv);
 	}
 	/*Tampon Serveur (Child)*/
@@ -67,12 +67,13 @@ int main (int argc, char *argv[])
 		//Pilots (Child)//
 		else if (process_id == 0) {
 			close(pfdSrvDrv[1]);close(pfdDrvSrv[0]); // Close unused write/read ends of respective pipes
-			forkPilots(queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg, tabCar, sem_race); // Pilot forking function
-			//pilot(number, queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg); // Fonction principale des pilotes
+			forkPilots(queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg, 
+						tabCar, sem_race, raceType, sem_type); // Pilot forking function
 		}
 		//Server (Parent)
 		else{
-			server(queue_id, pfdSrvDrv[1], pfdDrvSrv[0], adr_msg, tabCar, sem_race); // Fonction principale du serveur
+			server(queue_id, pfdSrvDrv[1], pfdDrvSrv[0], adr_msg, tabCar, sem_race,
+					listStock, sem_DispSrv, raceType, sem_type); // Main server function
 			int stat = SIGTERM;
 			wait(&stat); // Wait for any process returning SIGTERM
 		}

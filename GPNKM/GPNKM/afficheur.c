@@ -1,28 +1,51 @@
 #include "afficheur.h"
 
+void scoreMonitor(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, int sem_DispSrv, int shm_DispSrv, int type)
+{
+	//TODO implement this huge function ^^
+}
+
 void showTRMenu(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, int sem_DispSrv, int shm_DispSrv)
 {
 	fflush(stdout);
 //	system ( "clear" );
 	printf("\033[36m");
-	printf ("Test Runs!\n");
+	printf ("Trial Runs!\n");
 	printf ("-------------------------------------\n\n");
-	printf ("1 : Begin Test Run 1\n");
-	printf ("2 : Begin Test Run 2\n");
-	printf ("3 : Begin Test Run 3\n");
+	printf ("1 : Begin Trial Run 1\n");
+	printf ("2 : Begin Trial Run 2\n");
+	printf ("3 : Begin Trial Run 3\n");
 	printf ("4 : Show Results of Trial Runs\n");
 	printf ("0 : Back\n");
 	printf ("-------------------------------------\n\n");
+	printf("\033[0m");
 	switch(getchar())
 	{
-		case '1' : printf("Test Run 1 Begin\n"); break;
-		case '2' : printf("Test Run 2 Begin\n"); break;
-		case '3' : printf("Test Run 3 Begin\n"); break;
+		case '1' : show_notice("Monitor", "Trial 1 is going to begin");
+				   while(!isShMemReadable(sem_DispSrv, SRV_WRITE));
+				   semDown(sem_DispSrv, DISP_WRITE);
+				   listStock->type = TR1;
+				   semUp(sem_DispSrv, DISP_WRITE);
+				   scoreMonitor(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv, TR1);
+				   break;
+		case '2' : show_notice("Monitor", "Trial 2 is going to begin");
+				   while(!isShMemReadable(sem_DispSrv, SRV_WRITE));
+				   semDown(sem_DispSrv, DISP_WRITE);
+				   listStock->type = TR2;
+				   semUp(sem_DispSrv, DISP_WRITE);
+				   scoreMonitor(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv, TR2);
+				   break;
+		case '3' : show_notice("Monitor", "Trial 3 is going to begin");
+				   while(!isShMemReadable(sem_DispSrv, SRV_WRITE));
+				   semDown(sem_DispSrv, DISP_WRITE);
+				   listStock->type = TR3;
+				   semUp(sem_DispSrv, DISP_WRITE);
+				   scoreMonitor(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv, TR3);
+				   break;
 		case '4' : printf("Show Results\n"); break;
 		case '0' : showMainMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
 		default  : showTRMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
 	}
-	printf("\033[0m");
 	fflush(stdin);
 }
 
@@ -39,16 +62,34 @@ void showQualifMenu(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, i
 	printf ("4 : Show Results of Qualification Runs\n");
 	printf ("0 : Back\n");
 	printf ("-------------------------------------\n\n");
+	printf("\033[0m");
 	switch(getchar())
 	{
-		case '1' : printf("Qualify Run 1 Begin\n"); break;
-		case '2' : printf("Qualify Run 2 Begin\n"); break;
-		case '3' : printf("Qualify Run 3 Begin\n"); break;
+		case '1' : show_notice("Monitor", "Qualification 1 is going to begin");
+				   while(!isShMemReadable(sem_DispSrv, SRV_WRITE));
+				   semDown(sem_DispSrv, DISP_WRITE);
+				   listStock->type = QU1;
+				   semUp(sem_DispSrv, DISP_WRITE);
+				   scoreMonitor(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv, QU1);
+				   break;
+		case '2' : show_notice("Monitor", "Qualification 1 is going to begin");
+				   while(!isShMemReadable(sem_DispSrv, SRV_WRITE));
+				   semDown(sem_DispSrv, DISP_WRITE);
+				   listStock->type = QU1;
+				   semUp(sem_DispSrv, DISP_WRITE);
+				   scoreMonitor(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv, QU1);
+				   break;
+		case '3' : show_notice("Monitor", "Qualification 1 is going to begin");
+				   while(!isShMemReadable(sem_DispSrv, SRV_WRITE));
+				   semDown(sem_DispSrv, DISP_WRITE);
+				   listStock->type = QU1;
+				   semUp(sem_DispSrv, DISP_WRITE);
+				   scoreMonitor(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv, QU1);
+				   break;
 		case '4' : printf("Show Results of Qualifiers\n"); break;
 		case '0' : showMainMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
 		default  : showQualifMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
-	}
-    printf("\033[0m");
+	}   
 	fflush(stdin);
 }
 
@@ -56,7 +97,7 @@ void endOfProgram(int queue_id, TmsgbufAdr adr_msg, int sem_DispSrv, int shm_Dis
 {
 	int i;
 	for(i = 0; i < 23; i++) kill(adr_msg.tabD[i], SIGTERM);
-	printf("All processes closed successfully\n");
+	show_success("Monitor", "All processes closed successfully\nProgram will now exit");
 	msgctl(queue_id, IPC_RMID, NULL);
 	semctl(sem_DispSrv, 0, IPC_RMID, NULL);
 	shmdt(&shm_DispSrv);
@@ -88,16 +129,22 @@ void showMainMenu(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, int
 	printf ("5 : Restart Grand Prix\n");
 	printf ("0 : Exit\n");
 	printf ("-------------------------------------\n\n");
+ 	printf("\033[0m");
 	switch(getchar())
 	{
 		case '1' : showTRMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
 		case '2' : showQualifMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
-		case '3' : printf("Grand Prix Runs Begin\n"); break;
+		case '3' : show_notice("Monitor", "Grand Prix is going to begin");
+				   while(!isShMemReadable(sem_DispSrv, SRV_WRITE));
+				   semDown(sem_DispSrv, DISP_WRITE);
+				   listStock->type = GP;
+				   semUp(sem_DispSrv, DISP_WRITE);
+				   scoreMonitor(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv, GP);
+				   break;
 		case '4' : printf("Show Results\n"); break;
 		case '5' : printf("Restart Grand Prix\n"); break;
 		case '0' : endOfProgram(queue_id, adr_msg, sem_DispSrv, shm_DispSrv);
 		default  : showMainMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
 	}
-	printf("\033[0m");
     fflush(stdin);
 }

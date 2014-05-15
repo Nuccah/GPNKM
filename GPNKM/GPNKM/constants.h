@@ -17,6 +17,17 @@
 #include <sys/msg.h>
 #include <signal.h>
 
+/* Change this to see more debug info: 
+* 0 -> NO MSG INFO
+* 1 -> ERROR INFO 
+* 2 -> SUCCESS INFO
+* 3 -> NOTICE INFO
+* 4 -> DEBUG INFO (All messages)
+* Default is 4
+* Recommended max level for prod is 2.
+*/
+#define LOGLVL 4 
+
 // Permission to Shared Memory
 #define PERMS 0666
 
@@ -59,6 +70,15 @@
 #define Q1 1080
 #define Q2 600
 #define Q3 720
+
+/* Race type */
+#define TR1 1
+#define TR2 2
+#define TR3 3
+#define QU1 4
+#define QU2 5
+#define QU3 6
+#define GP  7
 
 /* speed limits (in kmph) */
 #define MINSPEED 285.1

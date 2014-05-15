@@ -1,6 +1,7 @@
 #include "pilot.h"
 
-int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, TCar *tabCar, int sem_id){
+int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, 
+			   TCar *tabCar, int sem_race, int *raceType, int sem_type){
 	int i;
 	pid_t pid; // ????
 	for(i=0;i<DRIVERS;i++){ // Multifork des 22 pilotes
@@ -16,7 +17,8 @@ int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_ms
 			srand((pidNum*10)+time(NULL));
           	read(pfdSrvDrv, &number, sizeof(int)); // First come first serve for driver numbers in pipe
           	write(pfdDrvSrv, &pidNum, sizeof(int)); // Write in pipe pilots PID for later kill
-          	pilot(number, queue_id, pfdSrvDrv, pfdDrvSrv, pilot_msg, i, pidNum, tabCar, sem_id);
+          	pilot(number, queue_id, pfdSrvDrv, pfdDrvSrv, pilot_msg, i, pidNum, 
+          		  tabCar, sem_race, raceType, sem_type);
        	}
     }
 	int status = 0;
@@ -25,7 +27,7 @@ int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_ms
 }
 
 void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, 
-			int table, pid_t pid, TCar *tabCar, int sem_race){	
+			int table, pid_t pid, TCar *tabCar, int sem_race, int *raceType, int sem_type){	
 	TmsgbufServ weatherInfo;
 	TCar pilot = tabCar[table];
 	pilot.num = number;
@@ -39,6 +41,13 @@ void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot 
 	semDown(sem_race, 0);
 	tabCar[table] = pilot;
 	semUp(sem_race, 0);
+	char *env;
+	sprintf(env, "Pilot %d", getpid());
+	show_debug(env, "Initialisation complete!");
+
+	/* Here the pilot has to wait for the race type message from server 
+	* and then he has to load his race stats and send when  he's ready to server */
+
 	double tireStatus = 100;
 	int i = 0;
 	do{

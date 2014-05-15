@@ -17,3 +17,9 @@ void semUp(int sem_id, int sem_channel){
 	op.sem_flg = 0;
 	semop(sem_id, &op, 1);
 }
+
+// Check if shared mem is readable
+bool isShMemReadable(int sem_id, int sem_channel){
+	if(semctl(sem_id, sem_channel, GETVAL, 1) == 1) return true;
+	return false;
+}

@@ -99,6 +99,9 @@ void semDown(int sem_id, int sem_channel);
 // To use when you finish your work in shared memo
 void semUp(int sem_id, int sem_channel);
 
+// Check if shared mem is readable
+bool isShMemReadable(int sem_id, int sem_channel);
+
 void show_notice(const char *env, const char *msg);
 void show_error(const char *env, const char *msg);
 void show_debug(const char *env, const char *msg);
