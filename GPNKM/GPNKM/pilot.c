@@ -323,5 +323,101 @@ bool exitPitstop(int num, bool *tabPitstop, int sem_pitstop)
 	}
 	return false;
 }
+/*
+void race(int raceType, TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_start, int weatherFactor, 
+			bool *tabPitstop, int sem_pitstop)
+{
+	switch(race)
+	{
+		case TR1:
+		case TR2: int totalTime = 5400; pilot->lapTimes = malloc(150*sizeof(TLap));
+				break;
+		case TR3: int totalTime = 3600; pilot->lapTimes = malloc(125*sizeof(TLap));
+				break;
+		case QU1: int totalTime = 1800; pilot->lapTimes = malloc(100*sizeof(TLap));
+				break;
+		case QU2: int totalTime = 600; pilot->lapTimes = malloc(50*sizeof(TLap));
+				break;
+		case QU3: int totalTime = 720; pilot->lapTimes = malloc(75*sizeof(TLap));
+				break;
+		case GP: pilot->lapTimes = malloc(54*sizeof(TLap)); break;
+	}
 
+	pilot->lapTimes = malloc(150*sizeof(TLap)); // Alloc sufficient laps for trial
+	sendReady(tabCar, sem_race, numCell, pilot); // Send ready to the server
+	do
+	{
+		while(!isShMemReadable(sem_start, 0)); 
+	} while(semctl(sem_start, 0, GETVAL) != 0); // Wait for the start sig
+
+	int i = 0;
+	int lap = 0;
+	bool isDamaged;
+	bool finished = false;
+	pilot->avgSpeed = 0.0;
+	double tireStatus = 100;
+	while(!finished)
+	{
+		if(i = 3)
+		{
+			i = 0;
+			pilot->lnum = lap+1;
+			lap++;
+		} 
+		pilot->lapTimes[lap].tabSect[i].speed = speedWeather(weatherFactor, isDamaged);
+		pilot->lapTimes[lap].tabSect[i].stime = sectorTime(pilot->lapTimes[lap].tabSect[i].speed, i);
+		isDamaged = damaged();
+		if(isDamaged) pilot->crashed = crashed();
+		if(pilot->crashed) pilot->retired = true; 
+		else
+		{
+			pilot->fuelStock = fuelConsumption(pilot->fuelStock);
+			if(pilot->fuelStock <= 0) pilot->retired = true;
+			tireStatus = tireWear(tireStatus, weatherFactor);
+			if(i=2){
+				if(tiresWorn(tireStatus) || isDamaged){
+					if(enterPitstop(pilot->num, tabPitstop, sem_pitstop))
+					{
+						pilot->lapTimes[lap].tabSect[i].stime = pilot->lapTimes[lap].tabSect[i].stime + pitTime();
+						if(tiresWorn(tireStatus))
+						{
+							pilot->tires = pilot->tires - 1;
+							if (pilot->tires < 0) pilot->retired = true;
+							tireStatus = 100;
+							pilot->lapTimes[lap].tabSect[i].stime = pilot->lapTimes[lap].tabSect[i].stime + changeTime();
+						}
+						if(isDamaged)
+						{
+							pilot->lapTimes[lap].tabSect[i].stime = pilot->lapTimes[lap].tabSect[i].stime + repairTime();
+							isDamaged = false;
+						}
+					}
+				}
+			}
+		}
+		i++;
+		semDown(sem_race, numCell);
+		tabCar[numCell] = *pilot;
+		semUp(sem_race, numCell);
+		if (pilot->retired) break;
+		switch(race)
+		{
+			case TR1:
+			case TR2: if (time >= totalTime) finished=true;
+					break;
+			case TR3: if (time >= totalTime) finished=true;
+					break;
+			case QU1: if (time >= totalTime) finished=true;
+					break;
+			case QU2: if (time >= totalTime) finished=true;
+					break;
+			case QU3: if (time >= totalTime) finished=true;
+					break;
+			case GP:  if (lap+1=GPLAPS) finished=true;
+					break;
+		}
+	}
+	sendOver(tabCar, sem_race, numCell, pilot);
+}
+*/
 
