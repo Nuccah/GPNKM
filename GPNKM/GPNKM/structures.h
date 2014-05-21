@@ -92,8 +92,8 @@ typedef struct TResults{
 	int num;
 	const char * teamName;
 	int lnum;
-	TLap* lapTimes;
-	double time;
+	double timeLastLap;
+	double timeGlobal;
 	bool retired; /* is retired (true) */
 	bool pitstop; 
 } TResults;

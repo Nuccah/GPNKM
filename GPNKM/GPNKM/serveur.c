@@ -16,12 +16,6 @@ int randomWeather(int queue_id, pid_t *tabD){
 	return number;
 }
 
-// Sector times as parameters
-// Calculates & Returns total lap time
-double lapTime(double s1, double s2, double s3){
-    return (s1 + s2 + s3);
-}
-
 void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, TCar *tabCar, int sem_race,
     		TSharedStock *listStock, int sem_DispSrv, int *raceType, int sem_type, int sem_start){
 	int i;
@@ -41,6 +35,8 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, TCar
 	msgsnd(queue_id, &adr_msg, sizeof(struct TmsgbufAdr), 0);
 	TCar tabRead[22];
 	show_success("Server", "Initialisation complete");
+
+	// Read race type from Monitor
 	int type = 0;
 	while(!((type >= TR1) && (type <= GP))){ 
 		while(!isShMemReadable(sem_DispSrv, DISP_WRITE));
@@ -48,29 +44,57 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, TCar
 		type = listStock->type;
 		semUp(sem_DispSrv, SRV_WRITE);
 	}
-
+	// Write race type 
 	semDown(sem_type, 0);
 	*raceType = type;
 	semUp(sem_type, 0);
 
+	TResults tabResult[22];
+
+	// Wait for drivers ready
 	for(i = 0; i < 22; i++){
-		if(isShMemReadable(sem_race, i)) tabRead[i] = tabCar[i];
+		if(isShMemReadable(sem_race, i)) 
+		{
+			tabRead[i] = tabCar[i];
+			tabResult[i].teamName = tabRead[i].teamName;
+			tabResult[i].num = tabRead[i].num;
+			tabResult[i].timeGlobal = 0;
+		}
 		else i--;
 		if(!tabRead[i].ready) i--;
 	}
+
+	TBest bestDriver;
+	bestDriver.time = 0;
 	semDown(sem_start, 0);
 	do {
-		sleep(2);
 		int k;
-		show_debug("Server",  "begins table read!");
 		for(k = 0; k < 22; k++){
-			if(isShMemReadable(sem_race, k)) tabRead[k] = tabCar[k];
+			if(isShMemReadable(sem_race, k))
+			{
+				tabRead[k] = tabCar[k];
+				tabResult[k].lnum = tabRead[k].lnum;
+				tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
+				tabResult[k].timeGlobal += tabResult[k].timeLastLap;
+				tabResult[k].retired = tabRead[k].retired;
+				tabResult[k].pitstop = tabRead[k].pitstop;
+
+				if(bestDriver.time > tabResult[k].timeLastLap) // if best lap time is bigger than timeLastLap 
+				{
+					bestDriver.time = tabResult[k].timeLastLap;
+					strcpy(bestDriver.teamName, tabResult[k].teamName);
+					bestDriver.num = tabResult[k].num;
+				}
+			} 
 			else k--;
-			printf("\n\n[Server] Tires and speed for car %d: %d - %.2lf\n\n", 
-					tabRead[k].num, tabRead[k].tires, tabRead[k].avgSpeed); 
-		}
-		show_debug("Server", "table read done!");
+		}	    
 	} while(1);
+}
+
+// Sector table as parameter
+// Calculate & return lap time 
+double lapTime(TSect *tabSect){
+    return (tabSect[1].stime + tabSect[2].stime + tabSect[3].stime);
 }
 
 
