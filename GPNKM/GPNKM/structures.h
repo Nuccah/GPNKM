@@ -88,6 +88,22 @@ typedef struct msgbufPilot {
 	struct TCar car;  /* message data */
 } TmsgbufPilot;
 
+typedef struct TResults{
+	int num;
+	const char * teamName;
+	int lnum;
+	TLap* lapTimes;
+	double time;
+	bool retired; /* is retired (true) */
+	bool pitstop; 
+}
+
+typedef struct TBest{
+	int num;
+	const char * teamName;
+	double time;
+}
+
 typedef struct TSharedStock{
 	int type;
 	struct TCar tabCar[22];

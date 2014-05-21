@@ -37,9 +37,7 @@ int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_ms
           	read(pfdSrvDrv, &number, sizeof(int)); // First come first serve for driver numbers in pipe
           	write(pfdDrvSrv, &pidNum, sizeof(int)); // Write in pipe pilots PID for later kill
           	pilot(number, queue_id, pfdSrvDrv, pfdDrvSrv, pilot_msg, i, pidNum, 
-          		  tabCar, sem_race, raceType, sem_type, sem_start);
-          		  /*pilot(number, queue_id, pfdSrvDrv, pfdDrvSrv, pilot_msg, i, pidNum, 
-          		  tabCar, sem_race, raceType, sem_type, tabPitstop, sem_pitstop);*/
+          		  tabCar, sem_race, raceType, sem_type, sem_start, tabPitstop, sem_pitstop);
        	}
     }
 	int status = 0;
@@ -63,7 +61,8 @@ void sendOver(TCar *tabCar, int sem_race, int numCell, TCar *pilot)
 	semUp(sem_race, numCell);	
 }
 
-void trial(int totalTime, TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_start, int weatherFactor)
+void trial(int totalTime, TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_start, int weatherFactor, 
+			bool *tabPitstop, int sem_pitstop)
 {
 	pilot->lapTimes = malloc(150*sizeof(TLap)); // Alloc sufficient laps for trial
 	sendReady(tabCar, sem_race, numCell, pilot); // Send ready to the server
@@ -88,32 +87,35 @@ void trial(int totalTime, TCar *tabCar, int sem_race, int numCell, TCar *pilot, 
 		pilot->lapTimes[lap].tabSect[i].speed = speedWeather(weatherFactor);
 		pilot->lapTimes[lap].tabSect[i].stime = sectorTime(pilot->lapTimes[lap].tabSect[i].speed, i);
 		isDamaged = damaged();
-		if(damaged) pilot->crashed = crashed();
+		if(isDamaged) pilot->crashed = crashed();
+		if(pilot->crashed) pilot->retired = true; 
+		else
+		{
+			pilot->fuelStock = fuelConsumption(pilot->fuelStock);
+			if(pilot->fuelStock <= 0) pilot->retired = true;
 
-		pilot->fuelStock = fuelConsumption(pilot->fuelStock);
-		if(pilot->fuelStock <= 0) pilot->retired = true;
-
-		tireStatus = tireWear(tireStatus, weatherFactor);
-		if(tiresWorn(tireStatus)){
-			pilot->tires = pilot->tires - 1;
-			if (pilot->tires < 0) pilot->retired = true;
-			tireStatus = 100;
+			tireStatus = tireWear(tireStatus, weatherFactor);
+			if(tiresWorn(tireStatus)){
+				if(enterPitstop(int num, bool *tabPitstop, int sem_pitstop))
+				{
+					pilot->tires = pilot->tires - 1;
+					if (pilot->tires < 0) pilot->retired = true;
+					tireStatus = 100;
+				}
+			}
 		}
-
 		i++;
 		semDown(sem_race, numCell);
 		tabCar[numCell] = *pilot;
 		semUp(sem_race, numCell);
+		if (pilot->retired) break;
 	}
 	sendOver(tabCar, sem_race, numCell, pilot);
 }
 
-/*
-	void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, 
-			int table, pid_t pid, TCar *tabCar, int sem_race, int *raceType, int sem_type, int tabPitstop, sem_pitstop)*/
 void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, 
 			int numCell, pid_t pid, TCar *tabCar, int sem_race, int *raceType, int sem_type,
-			int sem_start){	
+			int sem_start, bool *tabPitstop, int sem_pitstop){	
 	TmsgbufServ weatherInfo;
 	TCar pilot;
 	pilot.num = number;
@@ -137,11 +139,11 @@ void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot 
 		}
 		switch(race)
 		{
-			case TR1: trial(5400, tabCar, sem_race, numCell, &pilot, sem_start, weatherInfo.mInt);
+			case TR1: trial(5400, tabCar, sem_race, numCell, &pilot, sem_start, weatherInfo.mInt, tabPitstop, sem_pitstop);
 					break;
-			case TR2: trial(5400, tabCar, sem_race, numCell, &pilot, sem_start, weatherInfo.mInt);
+			case TR2: trial(5400, tabCar, sem_race, numCell, &pilot, sem_start, weatherInfo.mInt, tabPitstop, sem_pitstop);
 					break;
-			case TR3: trial(3600, tabCar, sem_race, numCell, &pilot, sem_start, weatherInfo.mInt);
+			case TR3: trial(3600, tabCar, sem_race, numCell, &pilot, sem_start, weatherInfo.mInt, tabPitstop, sem_pitstop);
 					break;
 			case QU1:
 					break;
