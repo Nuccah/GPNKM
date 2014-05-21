@@ -1,7 +1,7 @@
 #include "pilot.h"
 
 int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, 
-			   TCar *tabCar, int sem_race, int *raceType, int sem_type){
+			   TCar *tabCar, int sem_race, int *raceType, int sem_type, int sem_start){
 	int i;
 	pid_t pid; // ????
 	for(i=0;i<DRIVERS;i++){ // Multifork des 22 pilotes
@@ -18,7 +18,7 @@ int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_ms
           	read(pfdSrvDrv, &number, sizeof(int)); // First come first serve for driver numbers in pipe
           	write(pfdDrvSrv, &pidNum, sizeof(int)); // Write in pipe pilots PID for later kill
           	pilot(number, queue_id, pfdSrvDrv, pfdDrvSrv, pilot_msg, i, pidNum, 
-          		  tabCar, sem_race, raceType, sem_type);
+          		  tabCar, sem_race, raceType, sem_type, sem_start);
        	}
     }
 	int status = 0;
@@ -26,53 +26,106 @@ int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_ms
 	exit(EXIT_SUCCESS);
 }
 
+void sendReady(TCar *tabCar, int sem_race, int numCell, TCar *pilot)
+{
+	pilot->ready = true;
+	semDown(sem_race, numCell);
+	tabCar[numCell] = *pilot;
+	semUp(sem_race, numCell);
+}
+
+void sendOver(TCar *tabCar, int sem_race, int numCell, TCar *pilot)
+{
+	pilot->ready = false;
+	semDown(sem_race, numCell);
+	tabCar[numCell] = *pilot;
+	semUp(sem_race, numCell);	
+}
+
+void trial(int totalTime, TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_start, int weatherFactor)
+{
+	pilot->lapTimes = malloc(150*sizeof(TLap)); // Alloc sufficient laps for trial
+	sendReady(tabCar, sem_race, numCell, pilot); // Send ready to the server
+	do
+	{
+		while(!isShMemReadable(sem_start, 0)); 
+	} while(semctl(sem_start, 0, GETVAL) != 0); // Wait for the start sig
+
+	int i = 0;
+	int lap = 0;
+	double tireStatus = 100;
+	while(totalTime > 0)
+	{
+		if(i = 3)
+		{
+			i = 0;
+			lap++;
+		} 
+		pilot->lapTimes[lap].tabSect[i].speed = speedWeather(weatherFactor);
+		pilot->lapTimes[lap].tabSect[i].stime = sectorTime(pilot->lapTimes[lap].tabSect[i].speed, i);
+		pilot->damaged = damaged();
+		pilot->crashed = crashed();
+
+		pilot->fuelStock = pilot->fuelStock - fuelConsumption();
+		if(pilot->fuelStock <= 0) pilot->retired = true;
+
+		tireStatus = tireStatus - tireWear(weatherFactor);
+		if(tireStatus <= TIREWEARLIMIT){
+			pilot->tires = pilot->tires - 1;
+			if (pilot->tires < 0) pilot->retired = true;
+			tireStatus = 100;
+		}
+
+		i++;
+		semDown(sem_race, numCell);
+		tabCar[numCell] = *pilot;
+		semUp(sem_race, numCell);
+	}
+	sendOver(tabCar, sem_race, numCell, pilot);
+}
+
 void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, 
-			int table, pid_t pid, TCar *tabCar, int sem_race, int *raceType, int sem_type){	
+			int numCell, pid_t pid, TCar *tabCar, int sem_race, int *raceType, int sem_type,
+			int sem_start){	
 	TmsgbufServ weatherInfo;
-	TCar pilot = tabCar[table];
+	TCar pilot;
 	pilot.num = number;
 	pilot.teamName = getTeamName(pilot.num); 
 	pilot_msg.mtype = SERVER;
 	pilot_msg.car = pilot;
-	pilot.fuelStock = fuelStart(pid);
+	pilot.fuelStock = fuelStart();
 	msgsnd(queue_id, &pilot_msg, sizeof(struct msgbufPilot), 0);
 	msgrcv(queue_id, &weatherInfo, sizeof(struct msgbufServ), pid, 0);
 	pilot.tires = chooseTires(weatherInfo.mInt);
-	semDown(sem_race, 0);
-	tabCar[table] = pilot;
-	semUp(sem_race, 0);
 	char *env;
 	sprintf(env, "Pilot %d", getpid());
 	show_debug(env, "Initialisation complete!");
 
-	/* Here the pilot has to wait for the race type message from server 
-	* and then he has to load his race stats and send when  he's ready to server */
-
-	double tireStatus = 100;
-	int i = 0;
 	do{
-		sleep(2);
-		if (damaged()) pilot.damaged = true;
-		if (crashed()) pilot.crashed = true;
-
-		pilot.fuelStock = pilot.fuelStock - fuelConsumption();
-		if(pilot.fuelStock <= 0) pilot.retired = true;
-
-		tireStatus = tireStatus - tireWear(weatherInfo.mInt);
-		if(tireStatus <= TIREWEARLIMIT){
-			pilot.tires = pilot.tires - 1;
-			if (pilot.tires < 0) pilot.retired = true;
-			tireStatus = 100;
+		int race = 0;
+		while(!((race >= TR1) && (race <= GP))) // Wait for the race type
+		{
+			while(!isShMemReadable(sem_type, 0));
+			race = *raceType;
 		}
-
-		double speed = speedWeather(weatherInfo.mInt);
-		pilot.avgSpeed = speed;
-
-		i++;
-		semDown(sem_race, 0);
-		tabCar[table] = pilot;
-		semUp(sem_race, 0);
-	}while(i < 165);
+		switch(race)
+		{
+			case TR1: trial(5400, tabCar, sem_race, numCell, &pilot, sem_start, weatherInfo.mInt);
+					break;
+			case TR2: trial(5400, tabCar, sem_race, numCell, &pilot, sem_start, weatherInfo.mInt);
+					break;
+			case TR3: trial(3600, tabCar, sem_race, numCell, &pilot, sem_start, weatherInfo.mInt);
+					break;
+			case QU1:
+					break;
+			case QU2:
+					break;
+			case QU3: 
+					break;
+			case GP:
+					break;
+		}
+	}while(1);
 }
 
 bool crashed(){
@@ -131,11 +184,17 @@ double speedWeather(int weather){
     return (speed * factor);
 }
 
-// Car speed and sector length as parameters
+// Car speed and sector number as parameters
 // Calculates & returns sector time
 double sectorTime(double speed, int sector){
     double mps = (((speed * 1000) / 60) / 60); // Speed in KPH (KM per Hour) to MPS (Meters per Second)
-    return (sector / mps);
+    switch(sector)
+    {
+    	case 0: return (S1 / mps);
+    	case 1: return (S2 / mps);
+    	case 2: return (S3 / mps);
+    	default: return 0.0;
+    }
 }
 
 // Attributed car number as parameter

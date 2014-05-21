@@ -39,11 +39,20 @@ int main (int argc, char *argv[])
 		//*SEMA INIT*//
 		//***********//
 		key_t sem_race_key = ftok(argv[0], 'P'); // Sema Key generated
-		int sem_race = semget(sem_race_key, 1, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
-		semctl(sem_race, 0, SETVAL, 1); // init all sema's at 1
+		int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
+		int i;
+		for(i = 0; i < 22; i++)
+		{
+			semctl(sem_race, i, SETVAL, 1);  // init all sema's at 1
+		}
+
 
 		key_t sem_type_key = ftok(argv[0], 'Q');
 		int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
+		semctl(sem_type, 0, SETVAL, 1);
+
+		key_t sem_start_key = ftok(argv[0], 'V');
+		int sem_start = semget(sem_start_key, 1, IPC_CREAT | PERMS);
 		semctl(sem_type, 0, SETVAL, 1);
 		//*****************//
 		//*SHARED MEM INIT*//
@@ -68,12 +77,12 @@ int main (int argc, char *argv[])
 		else if (process_id == 0) {
 			close(pfdSrvDrv[1]);close(pfdDrvSrv[0]); // Close unused write/read ends of respective pipes
 			forkPilots(queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg, 
-						tabCar, sem_race, raceType, sem_type); // Pilot forking function
+						tabCar, sem_race, raceType, sem_type, sem_start); // Pilot forking function
 		}
 		//Server (Parent)
 		else{
 			server(queue_id, pfdSrvDrv[1], pfdDrvSrv[0], adr_msg, tabCar, sem_race,
-					listStock, sem_DispSrv, raceType, sem_type); // Main server function
+					listStock, sem_DispSrv, raceType, sem_type, sem_start); // Main server function
 			int stat = SIGTERM;
 			wait(&stat); // Wait for any process returning SIGTERM
 		}

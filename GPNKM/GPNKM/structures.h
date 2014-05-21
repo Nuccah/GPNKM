@@ -19,7 +19,6 @@ typedef struct TSect {
 typedef struct TLap {
 	int lnum;
 	double ltime; /* Time for a lap */
-	double averTime; /* Average time by secor for a lap */
 	TSect tabSect[3];
 } TLap;
 
@@ -30,7 +29,8 @@ typedef struct TCar {
 	bool damaged; /* is damaged (true) */
 	bool crashed; /* is crashed (true) */
 	int num;
-	int start_position;
+	int start_position; 
+	bool ready;
 	int tires; /* sets of tires */
 	double avgSpeed; /* Average speed in real time */
 	double fuelStock; /* fuel stock in liter */

@@ -3,6 +3,9 @@
 void scoreMonitor(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, int sem_DispSrv, int shm_DispSrv, int type)
 {
 	//TODO implement this huge function ^^
+	do{
+		sleep(30);
+	}while(1);
 }
 
 void showTRMenu(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, int sem_DispSrv, int shm_DispSrv)

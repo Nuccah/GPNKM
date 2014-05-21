@@ -13,8 +13,8 @@ double speedWeather(int weather);
 double sectorTime(double speed, int sector);
 const char * getTeamName(int number);
 int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg,
-			  TCar *tabCar, int sem_race, int *raceType, int sem_type);
+			  TCar *tabCar, int sem_race, int *raceType, int sem_type, int sem_start);
 void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, 
-			int table, pid_t pid, TCar *tabCar, int sem_race, int *raceType, int sem_type);
+			int numCell, pid_t pid, TCar *tabCar, int sem_race, int *raceType, int sem_type, int sem_start);
 
 #endif

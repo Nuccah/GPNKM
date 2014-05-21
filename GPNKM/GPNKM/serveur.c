@@ -23,7 +23,7 @@ double lapTime(double s1, double s2, double s3){
 }
 
 void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, TCar *tabCar, int sem_race,
-    		TSharedStock *listStock, int sem_DispSrv, int *raceType, int sem_type){
+    		TSharedStock *listStock, int sem_DispSrv, int *raceType, int sem_type, int sem_start){
 	int i;
 	char* msg;
 	int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
@@ -42,60 +42,29 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, TCar
 	TCar tabRead[22];
 	show_success("Server", "Initialisation complete");
 	int type = 0;
-	while((type < TR1) || (type > GP)){ 
+	while(!((type >= TR1) && (type <= GP))){ 
 		while(!isShMemReadable(sem_DispSrv, DISP_WRITE));
 		semDown(sem_DispSrv, SRV_WRITE);
 		type = listStock->type;
 		semUp(sem_DispSrv, SRV_WRITE);
 	}
-	switch(type) {
-		case TR1: semDown(sem_type, 0);
-				  *raceType = TR1;
-				  semUp(sem_type, 0);
 
-				  break;
-		case TR2: semDown(sem_type, 0);
-				  *raceType = TR2;
-				  semUp(sem_type, 0);
+	semDown(sem_type, 0);
+	*raceType = type;
+	semUp(sem_type, 0);
 
-				  break;
-		case TR3: semDown(sem_type, 0);
-				  *raceType = TR3;
-				  semUp(sem_type, 0);
-
-				  break;
-		case QU1: semDown(sem_type, 0);
-				  *raceType = QU1;
-				  semUp(sem_type, 0);
-
-				  break;
-		case QU2: semDown(sem_type, 0);
-				  *raceType = QU2;
-				  semUp(sem_type, 0);
-
-				  break;
-		case QU3: semDown(sem_type, 0);
-				  *raceType = QU3;
-				  semUp(sem_type, 0);
-
-				  break;
-		case GP:  semDown(sem_type, 0);
-				  *raceType = GP;
-				  semUp(sem_type, 0);
-
-				  break;
-		default:  sprintf(msg, "Something wrong happened in type switch, type value was: %d", type);
-				  show_error("Server", msg);
-				  strcpy(msg, "");
-				  break;
+	for(i = 0; i < 22; i++){
+		if(isShMemReadable(sem_race, i)) tabRead[i] = tabCar[i];
+		else i--;
+		if(!tabRead[i].ready) i--;
 	}
-
+	semDown(sem_start, 0);
 	do {
 		sleep(2);
 		int k;
 		show_debug("Server",  "begins table read!");
 		for(k = 0; k < 22; k++){
-			if(isShMemReadable(sem_race, 0)) tabRead[k] = tabCar[k];
+			if(isShMemReadable(sem_race, k)) tabRead[k] = tabCar[k];
 			else k--;
 			printf("\n\n[Server] Tires and speed for car %d: %d - %.2lf\n\n", 
 					tabRead[k].num, tabRead[k].tires, tabRead[k].avgSpeed); 
