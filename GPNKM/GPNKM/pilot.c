@@ -4,21 +4,25 @@ int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_ms
 			   TCar *tabCar, int sem_race, int *raceType, int sem_type, int sem_start){
 	int i;
 	pid_t pid; // ????
-	/*SEMA PITSTOP INIT
+	/*SEMA PITSTOP INIT*/
 	////
-	key_t sem_pitstop_key = ftok(argv[0], 'Z'); // Sema Key generated
-	int sem_pitstop = semget(sem_pitstop_key, 1, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
+	key_t sem_pitstop_key = ftok("/usr/bin/passwd", 'Z'); // Sema Key generated
+	int sem_pitstop = semget(sem_pitstop_key, 11, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
 	semctl(sem_pitstop, 0, SETVAL, 1); // init all sema's at 1
+	for(i = 0; i < 11; i++)
+	{
+		semctl(sem_pitstop, i, SETVAL, 1);  // init all sema's at 1
+	}
 	////
-	//SHARED PITSTOP MEM INIT
+	/*SHARED PITSTOP MEM INIT*/
 	////
-	key_t shm_pitstop_key = ftok(argv[0], 'X');
-	int shm_pitstop = shmget(shm_race_key, 11*sizeof(bool), IPC_CREAT | PERMS); // Creation Pitstop Shared Memory
+	key_t shm_pitstop_key = ftok("/usr/bin/passwd", 'X');
+	int shm_pitstop = shmget(shm_pitstop_key, 11*sizeof(bool), IPC_CREAT | PERMS); // Creation Pitstop Shared Memory
 	bool *tabPitstop = (void *) shmat(shm_pitstop, NULL, 0); // Creation table shared and pilots
 	for(i=0;i<11;i++)
 	{
 		tabPitstop[i] = false;
-	}*/
+	}
 	for(i=0;i<DRIVERS;i++){ // Multifork des 22 pilotes
 		pid = fork();
 
@@ -263,31 +267,31 @@ int getPitstop(int number){
 	}
 	return x;
 }
-/*
-bool enterPitstop(int num, int tabPitstop, int sem_pitstop)
+
+bool enterPitstop(int num, bool *tabPitstop, int sem_pitstop)
 {
 	int tab = getPitstop(num);
 	if(isShMemReadable(sem_pitstop, 0))
 	{
-		semDown(sem_pitstop, 0);
+		semDown(sem_pitstop, tab);
 		tabPitstop[tab] = true;
-		semUp(sem_pitstop, 0);
+		semUp(sem_pitstop, tab);
 		return true;
 	}
 	return false;
 }
 
-bool exitPitstop(int num, int tabPitstop, int sem_pitstop)
+bool exitPitstop(int num, bool *tabPitstop, int sem_pitstop)
 {
 	int tab = getPitstop(num);
 	if(isShMemReadable(sem_pitstop, 0))
 	{
-		semDown(sem_pitstop, 0);
+		semDown(sem_pitstop, tab);
 		tabPitstop[tab] = false;
-		semUp(sem_pitstop, 0);
+		semUp(sem_pitstop, tab);
 		return true;
 	}
 	return false;
 }
-*/
+
 
