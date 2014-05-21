@@ -84,7 +84,7 @@ void trial(int totalTime, TCar *tabCar, int sem_race, int numCell, TCar *pilot, 
 			pilot->lnum = lap;
 			lap++;
 		} 
-		pilot->lapTimes[lap].tabSect[i].speed = speedWeather(weatherFactor);
+		pilot->lapTimes[lap].tabSect[i].speed = speedWeather(weatherFactor, isDamaged);
 		pilot->lapTimes[lap].tabSect[i].stime = sectorTime(pilot->lapTimes[lap].tabSect[i].speed, i);
 		isDamaged = damaged();
 		if(isDamaged) pilot->crashed = crashed();
@@ -93,14 +93,25 @@ void trial(int totalTime, TCar *tabCar, int sem_race, int numCell, TCar *pilot, 
 		{
 			pilot->fuelStock = fuelConsumption(pilot->fuelStock);
 			if(pilot->fuelStock <= 0) pilot->retired = true;
-
 			tireStatus = tireWear(tireStatus, weatherFactor);
-			if(tiresWorn(tireStatus)){
-				if(enterPitstop(int num, bool *tabPitstop, int sem_pitstop))
-				{
-					pilot->tires = pilot->tires - 1;
-					if (pilot->tires < 0) pilot->retired = true;
-					tireStatus = 100;
+			if(i=2){
+				if(tiresWorn(tireStatus) || isDamaged){
+					if(enterPitstop(pilot->num, tabPitstop, sem_pitstop))
+					{
+						pilot->lapTimes[lap].tabSect[i].stime = pilot->lapTimes[lap].tabSect[i].stime + pitTime();
+						if(tiresWorn(tireStatus))
+						{
+							pilot->tires = pilot->tires - 1;
+							if (pilot->tires < 0) pilot->retired = true;
+							tireStatus = 100;
+							pilot->lapTimes[lap].tabSect[i].stime = pilot->lapTimes[lap].tabSect[i].stime + changeTime();
+						}
+						if(isDamaged)
+						{
+							pilot->lapTimes[lap].tabSect[i].stime = pilot->lapTimes[lap].tabSect[i].stime + repairTime();
+							isDamaged = false;
+						}
+					}
 				}
 			}
 		}
@@ -180,6 +191,21 @@ double randomNumber(double min, double max){
     return min + (rand() / div);
 }
 
+double pitTime()
+{
+    return randomNumber(MINTIME, MAXTIME);
+}
+
+double changeTime()
+{
+    return randomNumber(MINCHANGE, MAXCHANGE);
+}
+
+double repairTime()
+{
+    return randomNumber(MINREPAIR, MAXREPAIR);
+}
+
 // Function that returns fuel consumption in liters between 0.3L & 0.7L per sector
 double fuelConsumption(int fuelStock){
     return (fuelStock - randomNumber(FUELCMIN, FUELCMAX));
@@ -205,8 +231,10 @@ bool tiresWorn(double tireStatus){
 
 // Speed and Weather (in string form) as parameters
 // Returns modified speed according to weather
-double speedWeather(int weather){
-    double speed = randomNumber(MINSPEED, MAXSPEED);
+double speedWeather(int weather, bool isDamaged){
+	double speed;
+	if(isDamaged) speed = DAMAGEFACTOR * randomNumber(MINSPEED, MAXSPEED);
+    else speed = randomNumber(MINSPEED, MAXSPEED);
     double factor;
     switch(weather){
     	case 3: factor = DRY;

@@ -96,13 +96,13 @@ typedef struct TResults{
 	double time;
 	bool retired; /* is retired (true) */
 	bool pitstop; 
-}
+} TResults;
 
 typedef struct TBest{
 	int num;
 	const char * teamName;
 	double time;
-}
+} TBest;
 
 typedef struct TSharedStock{
 	int type;

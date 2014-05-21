@@ -60,6 +60,7 @@
 /* random loss percentage constants (by lap)*/
 #define CRASH 0.0005
 #define BREAK 0.0015
+#define DAMAGEFACTOR 0.7
 
 /* sector length (in meters) */
 #define S1 2300
@@ -83,6 +84,14 @@
 /* speed limits (in kmph) */
 #define MINSPEED 285.1
 #define MAXSPEED 315.0
+
+/* pit stop limits */
+#define MINTIME 4
+#define MAXTIME 6
+#define MINCHANGE 5
+#define MAXCHANGE 7
+#define MINREPAIR 5
+#define MAXREPAIR 10
 
 /* fuel data (in liter) */
 #define FUELSMAX 100.0
