@@ -31,6 +31,7 @@ typedef struct TCar {
 	int num;
 	int start_position; 
 	int lnum;
+	int pitstop;
 	int tires; /* sets of tires */
 	double avgSpeed; /* Average speed in real time */
 	double fuelStock; /* fuel stock in liter */
@@ -117,6 +118,18 @@ void semUp(int sem_id, int sem_channel);
 
 // Check if shared mem is readable
 bool isShMemReadable(int sem_id, int sem_channel);
+
+// Reset the sema to 1
+void semReset(int sem_id, int sem_channel);
+
+// sig = value to put in sema
+// Put a sig in the corresponding channel of the corresponding sema
+void sendSig(int sig, int sem_id, int sem_channel);
+// force to wait the sig parameter in the corresponding sema
+void waitSig(int sig, int sem_id, int sem_channel);
+// check once the sig value in the sema and compare to the parameter 
+// return true if they correspond else return false
+bool checkSig(int sig, int sem_id, int sem_channel);
 
 void show_notice(const char *env, const char *msg);
 void show_error(const char *env, const char *msg);

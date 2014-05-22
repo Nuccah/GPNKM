@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <sys/msg.h>
 #include <signal.h>
+#include "opcodes.h"
 
 /* Change this to see more debug info: 
 * 0 -> NO MSG INFO

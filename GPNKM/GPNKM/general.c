@@ -18,8 +18,32 @@ void semUp(int sem_id, int sem_channel){
 	semop(sem_id, &op, 1);
 }
 
+// Reset the sema to SIGFREE (default = 1)
+void semReset(int sem_id, int sem_channel){
+	semctl(sem_id, sem_channel, SETVAL, SIGFREE);
+}
+
 // Check if shared mem is readable
 bool isShMemReadable(int sem_id, int sem_channel){
-	if(semctl(sem_id, sem_channel, GETVAL, 1) == 1) return true;
+	if(semctl(sem_id, sem_channel, GETVAL, 1) == SIGFREE) return true;
+	return false;
+}
+
+
+// sig = value to put in sema
+// Put a sig in the corresponding channel of the corresponding sema
+void sendSig(int sig, int sem_id, int sem_channel){
+	semctl(sem_id, sem_channel, SETVAL, sig);
+}
+
+// force to wait the sig parameter in the corresponding sema
+void waitSig(int sig, int sem_id, int sem_channel){
+	while(semctl(sem_id, sem_channel, GETVAL) != sig); 
+}
+
+// check once the sig value in the sema and compare to the parameter 
+// return true if they correspond else return false
+bool checkSig(int sig, int sem_id, int sem_channel){
+	if(semctl(sem_id, sem_channel, GETVAL) == sig) return true;
 	return false;
 }

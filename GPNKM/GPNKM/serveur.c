@@ -82,7 +82,7 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, TCar
 				if(bestDriver.time > tabResult[k].timeLastLap) // if best lap time is bigger than timeLastLap 
 				{
 					bestDriver.time = tabResult[k].timeLastLap;
-					strcpy(bestDriver.teamName, tabResult[k].teamName);
+					bestDriver.teamName = tabResult[k].teamName;
 					bestDriver.num = tabResult[k].num;
 				}
 			} 

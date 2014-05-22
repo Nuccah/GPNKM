@@ -44,5 +44,6 @@
     <None Include="pilot.h" />
     <None Include="afficheur.h" />
     <None Include="constants.h" />
+    <None Include="opcodes.h" />
   </ItemGroup>
 </Project>
