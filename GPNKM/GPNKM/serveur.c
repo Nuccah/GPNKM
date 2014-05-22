@@ -16,8 +16,12 @@ int randomWeather(int queue_id, pid_t *tabD){
 	return number;
 }
 
-void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, TCar *tabCar, int sem_race,
-    		TSharedStock *listStock, int sem_DispSrv, int *raceType, int sem_type, int sem_start){
+void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, int sem_DispSrv, int shm_DispSrv, 
+			int sem_type, int sem_control, int sem_race, int shm_race){
+    // INIT SECTION
+	TSharedStock *listStock = (void *) shmat(shm_DispSrv, NULL, 0);
+	TCar *tabCar = (void *) shmat(shm_race, NULL, 0);
+    
 	int i;
 	char* msg;
 	int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
@@ -36,59 +40,84 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, TCar
 	TCar tabRead[22];
 	show_success("Server", "Initialisation complete");
 
-	// Read race type from Monitor
-	int type = 0;
-	while(!((type >= TR1) && (type <= GP))){ 
-		while(!isShMemReadable(sem_DispSrv, DISP_WRITE));
-		semDown(sem_DispSrv, SRV_WRITE);
-		type = listStock->type;
-		semUp(sem_DispSrv, SRV_WRITE);
-	}
-	// Write race type 
-	semDown(sem_type, 0);
-	*raceType = type;
-	semUp(sem_type, 0);
+	do{
+		// Wait race type from Monitor
+		int type = 0;
+		while(!((type >= SIGTR1) && (type <= SIGGP))) type = getSig(sem_type, 0);
+		printf("Server received: %d\n", type);
 
-	TResults tabResult[22];
+		TSharedStock localStock;
+		localStock.bestDriver.time = 0;
 
-	// Wait for drivers ready
-	for(i = 0; i < 22; i++){
-		if(isShMemReadable(sem_race, i)) 
-		{
+		// Wait for drivers ready
+		for(i = 0; i < 22; i++){
+			while(!isShMemReadable(sem_race, i));
 			tabRead[i] = tabCar[i];
-			tabResult[i].teamName = tabRead[i].teamName;
-			tabResult[i].num = tabRead[i].num;
-			tabResult[i].timeGlobal = 0;
+			localStock.tabResult[i].teamName = tabRead[i].teamName;
+			localStock.tabResult[i].num = tabRead[i].num;
+			localStock.tabResult[i].timeGlobal = 0;
 		}
-		else i--;
-		if(!tabRead[i].ready) i--;
-	}
+		// Init signal handler if race type based on time
+		if(type != SIGGP) signal(SIGALRM, endRace);
 
-	TBest bestDriver;
-	bestDriver.time = 0;
-	semDown(sem_start, 0);
-	do {
-		int k;
-		for(k = 0; k < 22; k++){
-			if(isShMemReadable(sem_race, k))
-			{
-				tabRead[k] = tabCar[k];
-				tabResult[k].lnum = tabRead[k].lnum;
-				tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
-				tabResult[k].timeGlobal += tabResult[k].timeLastLap;
-				tabResult[k].retired = tabRead[k].retired;
-				tabResult[k].pitstop = tabRead[k].pitstop;
+		// Send start signal
+		sendSig(SIGSTART, sem_control, 0); // THIS POINT BUUUUUUUGS !!!! WTF?
+		printf("Server start race: %d\n", getSig(sem_control, 0));
+		switch(type){
+			case SIGTR1: alarm(54);
+					break;
+			case SIGTR2: alarm(54);
+					break;
+			case SIGTR3: alarm(36);
+					break;
+			case SIGQU1: alarm(11);
+					break;
+			case SIGQU2: alarm(6);
+					break;
+			case SIGQU3: alarm(8);
+					break;
+		}
+		bool finished = false;
+		int currentLap = 0;
+		do {
+			if((type != SIGGP) && checkSig(SIGEND, sem_control, 0)) finished = true;
+			else if(currentLap >= LAPGP) goto end;
+			else{
+				int k;
+				for(k = 0; k < 22; k++){
+					if(isShMemReadable(sem_race, k))
+					{
+						tabRead[k] = tabCar[k];
+						localStock.tabResult[k].lnum = tabRead[k].lnum;
+						localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
+						localStock.tabResult[k].timeGlobal += localStock.tabResult[k].timeLastLap;
+						localStock.tabResult[k].retired = tabRead[k].retired;
+						localStock.tabResult[k].pitstop = tabRead[k].pitstop;
 
-				if(bestDriver.time > tabResult[k].timeLastLap) // if best lap time is bigger than timeLastLap 
-				{
-					bestDriver.time = tabResult[k].timeLastLap;
-					bestDriver.teamName = tabResult[k].teamName;
-					bestDriver.num = tabResult[k].num;
+						if(localStock.bestDriver.time > localStock.tabResult[k].timeLastLap) // if best lap time is bigger than timeLastLap 
+						{
+							localStock.bestDriver.time = localStock.tabResult[k].timeLastLap;
+							localStock.bestDriver.teamName = localStock.tabResult[k].teamName;
+							localStock.bestDriver.num = localStock.tabResult[k].num;
+						}
+						semDown(sem_DispSrv, 0);
+						*listStock = localStock;
+						semUp(sem_DispSrv, 0);
+					} 
+					else k--;
 				}
-			} 
-			else k--;
-		}	    
-	} while(1);
+				if(type == SIGGP) currentLap++;
+			}	    
+		} while(!finished);
+		goto next;
+		end: // Terminate GP and send all last informations to monitor
+			sendSig(SIGEND, sem_control, 0);
+
+	    next:
+	    	show_success("Server", "Race terminated!");
+	}while(!checkSig(SIGEXIT, sem_control, 0));
+	shmdt(&shm_race);
+	shmdt(&shm_DispSrv);
 }
 
 // Sector table as parameter
@@ -97,4 +126,10 @@ double lapTime(TSect *tabSect){
     return (tabSect[1].stime + tabSect[2].stime + tabSect[3].stime);
 }
 
-
+// Executed when alarm() is at 0
+void endRace(int sig){
+    signal(SIGALRM, SIG_IGN);
+	key_t sem_control_key = ftok(PATH, CONTROL);
+	int sem_control = semget(sem_control, 1, IPC_CREAT | PERMS);
+	sendSig(SIGEND, sem_control, 0);
+}

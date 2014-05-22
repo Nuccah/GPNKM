@@ -106,8 +106,8 @@ typedef struct TBest{
 } TBest;
 
 typedef struct TSharedStock{
-	int type;
-	struct TCar tabCar[22];
+	TResults tabResult[22];
+	TBest bestDriver;
 } TSharedStock;
 
 // To use when you are going to work in shared memo
@@ -130,6 +130,8 @@ void waitSig(int sig, int sem_id, int sem_channel);
 // check once the sig value in the sema and compare to the parameter 
 // return true if they correspond else return false
 bool checkSig(int sig, int sem_id, int sem_channel);
+// return the value of the signal in the sema
+int getSig(int sem_id, int sem_channel);
 
 void show_notice(const char *env, const char *msg);
 void show_error(const char *env, const char *msg);

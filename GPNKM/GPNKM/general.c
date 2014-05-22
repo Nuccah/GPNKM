@@ -47,3 +47,8 @@ bool checkSig(int sig, int sem_id, int sem_channel){
 	if(semctl(sem_id, sem_channel, GETVAL) == sig) return true;
 	return false;
 }
+
+// return the value of the signal in the sema
+int getSig(int sem_id, int sem_channel){
+	return semctl(sem_id, sem_channel, GETVAL);
+}

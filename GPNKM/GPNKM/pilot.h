@@ -19,11 +19,10 @@ double sectorTime(double speed, int sector);
 double pitTime();
 double changeTime();
 double repairTime();
-int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg,
-			  TCar *tabCar, int sem_race, int *raceType, int sem_type, int sem_start);
-void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, 
-			int numCell, pid_t pid, TCar *tabCar, int sem_race, int *raceType, int sem_type, int sem_start, 
-			bool *tabPitstop, int sem_pitstop);
+int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, int sem_type, int sem_control,
+			int sem_race, int shm_race);
+void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg,   int sem_type, int sem_control,
+			int sem_race, int shm_race,	int numCell, pid_t pid,	bool *tabPitstop, int sem_pitstop);
 void trial(int totalTime, TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_start, int weatherFactor, 
 			bool *tabPitstop, int sem_pitstop);
 

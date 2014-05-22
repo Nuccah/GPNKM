@@ -1,14 +1,32 @@
 #include "afficheur.h"
 
-void scoreMonitor(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, int sem_DispSrv, int shm_DispSrv, int type)
+void scoreMonitor(int queue_id, TmsgbufAdr adr_msg, int type, int sem_control, int sem_DispSrv, int shm_DispSrv)
 {
+	// INIT SECTION
+	TSharedStock *listStock = (void *) shmat(shm_DispSrv, NULL, 0); 
+	waitSig(SIGSTART, sem_control, 0);
+	printf("Run begins!!!\n\n");
 	//TODO implement this huge function ^^
+	bool finished = false;
+	TSharedStock localStock;
 	do{
-		sleep(30);
-	}while(1);
+		if(checkSig(SIGEND, sem_control, 0)) finished = true;
+		else{			
+			if(isShMemReadable(sem_DispSrv, 0)){
+				localStock = *listStock;
+				int i;
+				system("clear");
+				for(i = 0; i < 22; i++){
+					printf("[Driver %d] last lap time: %.2lf sec | global time: %.2lf sec\n", localStock.tabResult[i].num, 
+							localStock.tabResult[i].timeLastLap, localStock.tabResult[i].timeGlobal);
+				}
+			}
+		} 
+	}while(!finished);
+	shmdt(&shm_DispSrv);
 }
 
-void showTRMenu(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, int sem_DispSrv, int shm_DispSrv)
+void showTRMenu(int queue_id, TmsgbufAdr adr_msg, int sem_type, int sem_control, int sem_DispSrv, int shm_DispSrv)
 {
 	fflush(stdout);
 //	system ( "clear" );
@@ -25,34 +43,26 @@ void showTRMenu(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, int s
 	switch(getchar())
 	{
 		case '1' : show_notice("Monitor", "Trial 1 is going to begin");
-				   while(!isShMemReadable(sem_DispSrv, SRV_WRITE));
-				   semDown(sem_DispSrv, DISP_WRITE);
-				   listStock->type = TR1;
-				   semUp(sem_DispSrv, DISP_WRITE);
-				   scoreMonitor(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv, TR1);
+				   sendSig(SIGTR1, sem_type, 0);
+				   printf("Race type sent: %d\n", getSig(sem_type, 0));
+				   scoreMonitor(queue_id, adr_msg, SIGTR1, sem_control, sem_DispSrv, shm_DispSrv);
 				   break;
 		case '2' : show_notice("Monitor", "Trial 2 is going to begin");
-				   while(!isShMemReadable(sem_DispSrv, SRV_WRITE));
-				   semDown(sem_DispSrv, DISP_WRITE);
-				   listStock->type = TR2;
-				   semUp(sem_DispSrv, DISP_WRITE);
-				   scoreMonitor(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv, TR2);
+				   sendSig(SIGTR2, sem_type, 0);
+				   scoreMonitor(queue_id, adr_msg, SIGTR2, sem_control, sem_DispSrv, shm_DispSrv);
 				   break;
 		case '3' : show_notice("Monitor", "Trial 3 is going to begin");
-				   while(!isShMemReadable(sem_DispSrv, SRV_WRITE));
-				   semDown(sem_DispSrv, DISP_WRITE);
-				   listStock->type = TR3;
-				   semUp(sem_DispSrv, DISP_WRITE);
-				   scoreMonitor(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv, TR3);
+				   sendSig(SIGTR3, sem_type, 0);
+				   scoreMonitor(queue_id, adr_msg, SIGTR3, sem_control, sem_DispSrv, shm_DispSrv);
 				   break;
 		case '4' : printf("Show Results\n"); break;
-		case '0' : showMainMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
-		default  : showTRMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
+		case '0' : showMainMenu(queue_id, adr_msg, sem_type, sem_control, sem_DispSrv, shm_DispSrv); break;
+		default  : showTRMenu(queue_id, adr_msg, sem_type, sem_control, sem_DispSrv, shm_DispSrv); break;
 	}
 	fflush(stdin);
 }
 
-void showQualifMenu(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, int sem_DispSrv, int shm_DispSrv)
+void showQualifMenu(int queue_id, TmsgbufAdr adr_msg,  int sem_type, int sem_control, int sem_DispSrv, int shm_DispSrv)
 {
 	fflush(stdout);
 	system ( "clear" );
@@ -69,42 +79,37 @@ void showQualifMenu(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, i
 	switch(getchar())
 	{
 		case '1' : show_notice("Monitor", "Qualification 1 is going to begin");
-				   while(!isShMemReadable(sem_DispSrv, SRV_WRITE));
-				   semDown(sem_DispSrv, DISP_WRITE);
-				   listStock->type = QU1;
-				   semUp(sem_DispSrv, DISP_WRITE);
-				   scoreMonitor(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv, QU1);
+				   sendSig(SIGQU1, sem_type, 0);
+				   scoreMonitor(queue_id, adr_msg, SIGQU1, sem_control, sem_DispSrv, shm_DispSrv);
 				   break;
 		case '2' : show_notice("Monitor", "Qualification 1 is going to begin");
-				   while(!isShMemReadable(sem_DispSrv, SRV_WRITE));
-				   semDown(sem_DispSrv, DISP_WRITE);
-				   listStock->type = QU1;
-				   semUp(sem_DispSrv, DISP_WRITE);
-				   scoreMonitor(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv, QU1);
-				   break;
+				   sendSig(SIGQU2, sem_type, 0);
+				   scoreMonitor(queue_id, adr_msg, SIGQU2, sem_control, sem_DispSrv, shm_DispSrv);
+				   break;;
 		case '3' : show_notice("Monitor", "Qualification 1 is going to begin");
-				   while(!isShMemReadable(sem_DispSrv, SRV_WRITE));
-				   semDown(sem_DispSrv, DISP_WRITE);
-				   listStock->type = QU1;
-				   semUp(sem_DispSrv, DISP_WRITE);
-				   scoreMonitor(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv, QU1);
+				   sendSig(SIGQU3, sem_type, 0);
+				   scoreMonitor(queue_id, adr_msg, SIGQU3, sem_control, sem_DispSrv, shm_DispSrv);
 				   break;
 		case '4' : printf("Show Results of Qualifiers\n"); break;
-		case '0' : showMainMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
-		default  : showQualifMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
+		case '0' : showMainMenu(queue_id, adr_msg, sem_type, sem_control, sem_DispSrv, shm_DispSrv); break;
+		default  : showQualifMenu(queue_id, adr_msg, sem_type, sem_control, sem_DispSrv, shm_DispSrv); break;
 	}   
 	fflush(stdin);
 }
 
-void endOfProgram(int queue_id, TmsgbufAdr adr_msg, int sem_DispSrv, int shm_DispSrv)
+void endOfProgram(int queue_id, TmsgbufAdr adr_msg,  int sem_type, int sem_control, int sem_DispSrv, int shm_DispSrv)
 {
-	int i;
-	for(i = 0; i < 23; i++) kill(adr_msg.tabD[i], SIGTERM);
-	show_success("Monitor", "All processes closed successfully\nProgram will now exit");
+	sendSig(SIGEXIT, sem_control, 0);
+
+	semctl(sem_type, 0, IPC_RMID, NULL);
 	msgctl(queue_id, IPC_RMID, NULL);
 	semctl(sem_DispSrv, 0, IPC_RMID, NULL);
 	shmdt(&shm_DispSrv);
 	shmctl(shm_DispSrv, IPC_RMID, NULL);
+	show_success("Monitor", "All processes closed successfully\nProgram will now exit");
+	int stat = SIGTERM;
+	wait(&stat);
+	semctl(sem_control, 0, IPC_RMID, NULL);
 	exit(EXIT_SUCCESS);
 }
 
@@ -117,8 +122,9 @@ void weather(int number){
 	return;
 }
 
-void showMainMenu(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, int sem_DispSrv, int shm_DispSrv)
+void showMainMenu(int queue_id, TmsgbufAdr adr_msg, int sem_type, int sem_control, int sem_DispSrv, int shm_DispSrv)
 {
+
 	fflush(stdout);
 	system ( "clear" );
 	printf("\033[36m");
@@ -135,19 +141,16 @@ void showMainMenu(int queue_id, TmsgbufAdr adr_msg, TSharedStock *listStock, int
  	printf("\033[0m");
 	switch(getchar())
 	{
-		case '1' : showTRMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
-		case '2' : showQualifMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
+		case '1' : showTRMenu(queue_id, adr_msg, sem_type, sem_control, sem_DispSrv, shm_DispSrv); break;
+		case '2' : showQualifMenu(queue_id, adr_msg, sem_type, sem_control, sem_DispSrv, shm_DispSrv); break;
 		case '3' : show_notice("Monitor", "Grand Prix is going to begin");
-				   while(!isShMemReadable(sem_DispSrv, SRV_WRITE));
-				   semDown(sem_DispSrv, DISP_WRITE);
-				   listStock->type = GP;
-				   semUp(sem_DispSrv, DISP_WRITE);
-				   scoreMonitor(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv, GP);
+				   sendSig(SIGGP, sem_type, 0);
+				   scoreMonitor(queue_id, adr_msg, SIGGP, sem_control, sem_DispSrv, shm_DispSrv);
 				   break;
 		case '4' : printf("Show Results\n"); break;
 		case '5' : printf("Restart Grand Prix\n"); break;
-		case '0' : endOfProgram(queue_id, adr_msg, sem_DispSrv, shm_DispSrv);
-		default  : showMainMenu(queue_id, adr_msg, listStock, sem_DispSrv, shm_DispSrv); break;
+		case '0' : endOfProgram(queue_id, adr_msg, sem_type, sem_control, sem_DispSrv, shm_DispSrv);
+		default  : showMainMenu(queue_id, adr_msg, sem_type, sem_control, sem_DispSrv, shm_DispSrv); break;
 	}
     fflush(stdin);
 }

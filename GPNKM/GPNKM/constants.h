@@ -73,14 +73,8 @@
 #define Q2 600
 #define Q3 720
 
-/* Race type */
-#define TR1 1
-#define TR2 2
-#define TR3 3
-#define QU1 4
-#define QU2 5
-#define QU3 6
-#define GP  7
+/* Lap number for the GP */
+#define LAPGP 150
 
 /* speed limits (in kmph) */
 #define MINSPEED 285.1

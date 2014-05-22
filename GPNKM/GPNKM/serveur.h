@@ -7,8 +7,12 @@ double lapTime(TSect *tabSect);
 double globalAverageSpeed(TCar pilot);
 double lapAverageSpeed(TLap lap);
 bool isTabCarReadable(int sem_id);
-void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, TCar *tabCar, int sem_race, 
-			TSharedStock *listStock, int sem_DispSrv, int *raceType, int sem_type, int sem_start);
+
+void endRace(int sig);
+
+// Main server function
+void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, int sem_DispSrv, int shm_DispSrv, 
+			int sem_type, int sem_control, int sem_race, int shm_race);
 
 
 

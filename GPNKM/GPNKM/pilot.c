@@ -1,12 +1,12 @@
 #include "pilot.h"
 
-int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, 
-			   TCar *tabCar, int sem_race, int *raceType, int sem_type, int sem_start){
+int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, int sem_type, int sem_control,
+			   int sem_race, int shm_race){
 	int i;
 	pid_t pid; // ????
 	/*SEMA PITSTOP INIT*/
 	////
-	key_t sem_pitstop_key = ftok("/usr/bin/passwd", 'Z'); // Sema Key generated
+	key_t sem_pitstop_key = ftok(PATH, 'Z'); // Sema Key generated
 	int sem_pitstop = semget(sem_pitstop_key, 11, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
 	semctl(sem_pitstop, 0, SETVAL, 1); // init all sema's at 1
 	for(i = 0; i < 11; i++)
@@ -16,7 +16,7 @@ int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_ms
 	////
 	/*SHARED PITSTOP MEM INIT*/
 	////
-	key_t shm_pitstop_key = ftok("/usr/bin/passwd", 'X');
+	key_t shm_pitstop_key = ftok(PATH, 'X');
 	int shm_pitstop = shmget(shm_pitstop_key, 11*sizeof(bool), IPC_CREAT | PERMS); // Creation Pitstop Shared Memory
 	bool *tabPitstop = (void *) shmat(shm_pitstop, NULL, 0); // Creation table shared and pilots
 	for(i=0;i<11;i++)
@@ -36,8 +36,8 @@ int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_ms
 			srand((pidNum*10)+time(NULL));
           	read(pfdSrvDrv, &number, sizeof(int)); // First come first serve for driver numbers in pipe
           	write(pfdDrvSrv, &pidNum, sizeof(int)); // Write in pipe pilots PID for later kill
-          	pilot(number, queue_id, pfdSrvDrv, pfdDrvSrv, pilot_msg, i, pidNum, 
-          		  tabCar, sem_race, raceType, sem_type, sem_start, tabPitstop, sem_pitstop);
+          	pilot(number, queue_id, pfdSrvDrv, pfdDrvSrv, pilot_msg, sem_type, sem_control,
+			sem_race, shm_race, i, pidNum, tabPitstop, sem_pitstop);
        	}
     }
 	int status = 0;
@@ -61,22 +61,22 @@ void sendOver(TCar *tabCar, int sem_race, int numCell, TCar *pilot)
 	semUp(sem_race, numCell);	
 }
 
-void trial(int totalTime, TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_start, int weatherFactor, 
+void trial(int totalTime, TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_control, int weatherFactor, 
 			bool *tabPitstop, int sem_pitstop)
 {
 	pilot->lapTimes = malloc(150*sizeof(TLap)); // Alloc sufficient laps for trial
-	sendReady(tabCar, sem_race, numCell, pilot); // Send ready to the server
-	do
-	{
-		while(!isShMemReadable(sem_start, 0)); 
-	} while(semctl(sem_start, 0, GETVAL) != 0); // Wait for the start sig
+	semDown(sem_race, 0);
+	tabCar[numCell] = *pilot;
+	semUp(sem_race, 0);
+	waitSig(SIGSTART, sem_control, 0); // Wait for start signal
 
 	int i = 0;
 	int lap = 0;
-	bool isDamaged;
+	bool isDamaged = false;
+	bool finished = false;
 	pilot->avgSpeed = 0.0;
 	double tireStatus = 100;
-	while(totalTime > 0)
+	while(!finished)
 	{
 		if(i = 3)
 		{
@@ -120,13 +120,16 @@ void trial(int totalTime, TCar *tabCar, int sem_race, int numCell, TCar *pilot, 
 		tabCar[numCell] = *pilot;
 		semUp(sem_race, numCell);
 		if (pilot->retired) break;
+		if (checkSig(SIGEND, sem_control, 0)) finished = true;
 	}
 	sendOver(tabCar, sem_race, numCell, pilot);
 }
 
-void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg, 
-			int numCell, pid_t pid, TCar *tabCar, int sem_race, int *raceType, int sem_type,
-			int sem_start, bool *tabPitstop, int sem_pitstop){	
+void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg,  int sem_type, int sem_control,
+			int sem_race, int shm_race, int numCell, pid_t pid, bool *tabPitstop, int sem_pitstop){	
+	// INIT SECTION
+	TCar *tabCar = (void *)shmat(shm_race, NULL, 0);
+
 	TmsgbufServ weatherInfo;
 	TCar pilot;
 	pilot.num = number;
@@ -143,29 +146,27 @@ void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot 
 
 	do{
 		int race = 0;
-		while(!((race >= TR1) && (race <= GP))) // Wait for the race type
-		{
-			while(!isShMemReadable(sem_type, 0));
-			race = *raceType;
-		}
+		while(!((race >= SIGTR1) && (race <= SIGGP))) race = getSig(sem_type, 0);
+		printf("Driver %d - Race tpye: %d\n", getpid(), race);
 		switch(race)
 		{
-			case TR1: trial(5400, tabCar, sem_race, numCell, &pilot, sem_start, weatherInfo.mInt, tabPitstop, sem_pitstop);
+			case SIGTR1: trial(5400, tabCar, sem_race, numCell, &pilot, sem_control, weatherInfo.mInt, tabPitstop, sem_pitstop);
 					break;
-			case TR2: trial(5400, tabCar, sem_race, numCell, &pilot, sem_start, weatherInfo.mInt, tabPitstop, sem_pitstop);
+			case SIGTR2: trial(5400, tabCar, sem_race, numCell, &pilot, sem_control, weatherInfo.mInt, tabPitstop, sem_pitstop);
 					break;
-			case TR3: trial(3600, tabCar, sem_race, numCell, &pilot, sem_start, weatherInfo.mInt, tabPitstop, sem_pitstop);
+			case SIGTR3: trial(3600, tabCar, sem_race, numCell, &pilot, sem_control, weatherInfo.mInt, tabPitstop, sem_pitstop);
 					break;
-			case QU1:
+			case SIGQU1:
 					break;
-			case QU2:
+			case SIGQU2:
 					break;
-			case QU3: 
+			case SIGQU3: 
 					break;
-			case GP:
+			case SIGGP:
 					break;
 		}
-	}while(1);
+	}while(!checkSig(SIGEXIT, sem_control, 0));
+	shmdt(&shm_race);
 }
 
 bool crashed(){
