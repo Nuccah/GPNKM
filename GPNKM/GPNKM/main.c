@@ -25,7 +25,7 @@ int main (int argc, char *argv[])
 
 	// Shared mem between monitor and server
 	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
-	int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), 0); // Creation com display server shm
+	int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), IPC_CREAT | PERMS); // Creation com display server shm
 
 	pid_t process_id = fork(); // Premier Fork (Server, Afficheur)
 	if (process_id < 0) {
@@ -57,7 +57,7 @@ int main (int argc, char *argv[])
 		//*SHARED MEM INIT*//
 		//*****************//
 		key_t shm_race_key = ftok(PATH, RACESHM);
-		int shm_race = shmget(shm_race_key, 22*sizeof(TCar), 0); // Creation Race Shared Memory
+		int shm_race = shmget(shm_race_key, 22*sizeof(TCar), IPC_CREAT | PERMS); // Creation Race Shared Memory
 
 		//***********//
 		//*PIPE INIT*//

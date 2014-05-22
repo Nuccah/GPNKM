@@ -11,7 +11,7 @@ int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_ms
 	/*SHARED PITSTOP MEM INIT*/
 	////
 	key_t shm_pitstop_key = ftok(PATH, PITSHM);
-	int shm_pitstop = shmget(shm_pitstop_key, 11*sizeof(bool), 0); // Creation Pitstop Shared Memory
+	int shm_pitstop = shmget(shm_pitstop_key, 11*sizeof(bool), IPC_CREAT | PERMS); // Creation Pitstop Shared Memory
 
 	for(i=0;i<DRIVERS;i++){ // Multifork des 22 pilotes
 		pid = fork();
@@ -159,9 +159,10 @@ void pilot(int number, int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot 
 	msgsnd(queue_id, &pilot_msg, sizeof(struct msgbufPilot), 0);
 	msgrcv(queue_id, &weatherInfo, sizeof(struct msgbufServ), pid, 0);
 	pilot.tires = chooseTires(weatherInfo.mInt);
-	char *env;
+	printf("YOLOOO\n");
+	/*char *env;
 	sprintf(env, "Driver %d", pilot.num);
-	show_debug(env, "Initialisation complete!");
+	show_debug(env, "Initialisation complete!");*/
 	do{
 		int race = 0;
 		while(!((race >= SIGTR1) && (race <= SIGGP))) race = getSig(sem_type, 0);
