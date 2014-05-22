@@ -28,7 +28,7 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
     int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS);
 
     key_t sem_DispSrv_key = ftok(PATH, STOCK);
-    int sem_DispSrv = semget(sem_DispSrv_key, 1, IPC_CREAT | PERMS);
+    int sem_DispSrv = semget(sem_DispSrv_key, 2, IPC_CREAT | PERMS);
 
     key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
     int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), S_IWUSR);
@@ -123,9 +123,10 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 							localStock.bestDriver.num = localStock.tabResult[k].num;
 						}
 					    // write into the shared mem for monitor
-						semDown(sem_DispSrv, 0);
+					    while(!isShMemReadable(sem_DispSrv, DISP_READ));
+						semDown(sem_DispSrv, SRV_WRITE);
 						*listStock = localStock;
-						semUp(sem_DispSrv, 0);
+						semUp(sem_DispSrv, SRV_WRITE);
 					} 
 					else k--;
 				}

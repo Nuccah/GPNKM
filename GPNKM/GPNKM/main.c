@@ -20,8 +20,9 @@ int main (int argc, char *argv[])
 
 	// Sema for control Shared Mem Stock
 	key_t sem_DispSrv_key = ftok(PATH, STOCK);
-	int sem_DispSrv = semget(sem_DispSrv_key, 1, IPC_CREAT | PERMS);
-	semReset(sem_DispSrv, 0);
+	int sem_DispSrv = semget(sem_DispSrv_key, 2, IPC_CREAT | PERMS);
+	semReset(sem_DispSrv, DISP_READ);
+	semReset(sem_DispSrv, SRV_WRITE);
 
 	// Shared mem between monitor and server
 	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
@@ -38,7 +39,7 @@ int main (int argc, char *argv[])
 		fflush(stdout);
 		msgrcv(queue_id, &adr_msg, sizeof(struct TmsgbufAdr), ADR, 0);
 		show_success("Monitor", "Server connected");
-		showMainMenu(queue_id, adr_msg, sem_type, sem_control, sem_DispSrv);
+		showMainMenu(queue_id, adr_msg);
 	}
 	/*Tampon Serveur (Child)*/
 	else{

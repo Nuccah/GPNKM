@@ -54,7 +54,7 @@ void trial(TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_control
 {
 	// INIT SECTION
 	key_t sem_pitstop_key = ftok(PATH, PIT);
-	int sem_pitstop = semget(sem_pitstop, 11, IPC_CREAT | PERMS);
+	int sem_pitstop = semget(sem_pitstop_key, 11, IPC_CREAT | PERMS);
 
 	key_t shm_pitstop_key = ftok(PATH, PITSHM);
 	int shm_pitstop = shmget(shm_pitstop_key, 11*sizeof(bool), S_IRUSR | S_IWUSR);
@@ -89,7 +89,6 @@ void trial(TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_control
 		pilot->snum = i;
 		pilot->lapTimes[lap].tabSect[i].speed = speedWeather(weatherFactor, isDamaged);
 		pilot->lapTimes[lap].tabSect[i].stime = sectorTime(pilot->lapTimes[lap].tabSect[i].speed, i);
-
 		isDamaged = damaged();
 		if(isDamaged) pilot->crashed = crashed();
 		if(pilot->crashed) pilot->retired = true; 

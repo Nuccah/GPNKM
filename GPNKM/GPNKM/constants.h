@@ -33,7 +33,7 @@
 #define PERMS 0666
 
 /* Sema Channel */
-#define DISP_WRITE 0
+#define DISP_READ 0
 #define SRV_WRITE 1
 
 //MQ ID's
