@@ -3,14 +3,14 @@
 /* Signals for control */
 
 // End of program
-#define SIGEXIT 0
+#define SIGEXIT 2
 // No action sent  
 #define SIGFREE 1
 
 // End the race
-#define SIGEND -1
+#define SIGEND 3
 // Start the race
-#define SIGSTART -2
+#define SIGSTART 4
 
 // Trial sig
 #define SIGTR1 10
@@ -31,9 +31,10 @@
 #define TYPE 11
 #define RACE 12
 #define STOCK 13
+#define PIT 14
 
 #define RACESHM 22
 #define STOCKSHM 23
-
+#define PITSHM 24
 
 #endif

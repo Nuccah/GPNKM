@@ -25,7 +25,7 @@ int main (int argc, char *argv[])
 
 	// Shared mem between monitor and server
 	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
-	int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), IPC_CREAT | PERMS); // Creation com display server shm
+	int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), 0); // Creation com display server shm
 
 	pid_t process_id = fork(); // Premier Fork (Server, Afficheur)
 	if (process_id < 0) {
@@ -38,7 +38,7 @@ int main (int argc, char *argv[])
 		fflush(stdout);
 		msgrcv(queue_id, &adr_msg, sizeof(struct TmsgbufAdr), ADR, 0);
 		show_success("Monitor", "Server connected");
-		showMainMenu(queue_id, adr_msg, sem_type, sem_control, sem_DispSrv, shm_DispSrv);
+		showMainMenu(queue_id, adr_msg, sem_type, sem_control, sem_DispSrv);
 	}
 	/*Tampon Serveur (Child)*/
 	else{
@@ -57,7 +57,7 @@ int main (int argc, char *argv[])
 		//*SHARED MEM INIT*//
 		//*****************//
 		key_t shm_race_key = ftok(PATH, RACESHM);
-		int shm_race = shmget(shm_race_key, 22*sizeof(TCar), IPC_CREAT | PERMS); // Creation Race Shared Memory
+		int shm_race = shmget(shm_race_key, 22*sizeof(TCar), 0); // Creation Race Shared Memory
 
 		//***********//
 		//*PIPE INIT*//
@@ -71,13 +71,11 @@ int main (int argc, char *argv[])
 		//Pilots (Child)//
 		else if (process_id == 0) {
 			close(pfdSrvDrv[1]);close(pfdDrvSrv[0]); // Close unused write/read ends of respective pipes
-			forkPilots(queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg, 
-						sem_type, sem_control, sem_race, shm_race); // Pilot forking function
+			forkPilots(queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg); // Pilot forking function
 		}
 		//Server (Parent)
 		else{
-			server(queue_id, pfdSrvDrv[1], pfdDrvSrv[0], adr_msg, sem_DispSrv, shm_DispSrv,
-					sem_type, sem_control, sem_race, shm_race); // Main server function
+			server(queue_id, pfdSrvDrv[1], pfdDrvSrv[0], adr_msg); // Main server function
 			int stat = SIGTERM;
 			wait(&stat); // Wait for any process returning SIGTERM
 		}

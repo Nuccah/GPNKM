@@ -16,13 +16,29 @@ int randomWeather(int queue_id, pid_t *tabD){
 	return number;
 }
 
-void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, int sem_DispSrv, int shm_DispSrv, 
-			int sem_type, int sem_control, int sem_race, int shm_race){
+void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
     // INIT SECTION
-	TSharedStock *listStock = (void *) shmat(shm_DispSrv, NULL, 0);
-	TCar *tabCar = (void *) shmat(shm_race, NULL, 0);
-    
-	int i;
+    key_t sem_type_key = ftok(PATH, TYPE);
+    int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
+
+    key_t sem_control_key = ftok(PATH, CONTROL);
+    int sem_control = semget(sem_control_key, 1, IPC_CREAT | PERMS);
+
+    key_t sem_race_key = ftok(PATH, RACE);
+    int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS);
+
+    key_t sem_DispSrv_key = ftok(PATH, STOCK);
+    int sem_DispSrv = semget(sem_DispSrv_key, 1, IPC_CREAT | PERMS);
+
+    key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
+    int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), S_IWUSR);
+	TSharedStock *listStock = (TSharedStock *) shmat(shm_DispSrv, NULL, 0);
+
+	key_t shm_race_key = ftok(PATH, RACESHM);
+	int shm_race = shmget(shm_race_key, 22*sizeof(TCar), S_IRUSR);
+	TCar *tabCar = (TCar *) shmat(shm_race, NULL, 0);
+    // END INIT SECTION
+    int i;
 	char* msg;
 	int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
 	int size = (sizeof(drivers) / sizeof(int))+1;
@@ -56,13 +72,14 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, int 
 			localStock.tabResult[i].teamName = tabRead[i].teamName;
 			localStock.tabResult[i].num = tabRead[i].num;
 			localStock.tabResult[i].timeGlobal = 0;
+			localStock.tabResult[i].timeLastLap = 0;
 		}
+		sleep(1);
 		// Init signal handler if race type based on time
 		if(type != SIGGP) signal(SIGALRM, endRace);
 
 		// Send start signal
 		sendSig(SIGSTART, sem_control, 0); // THIS POINT BUUUUUUUGS !!!! WTF?
-		printf("Server start race: %d\n", getSig(sem_control, 0));
 		switch(type){
 			case SIGTR1: alarm(54);
 					break;
@@ -81,25 +98,31 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, int 
 		int currentLap = 0;
 		do {
 			if((type != SIGGP) && checkSig(SIGEND, sem_control, 0)) finished = true;
-			else if(currentLap >= LAPGP) goto end;
+			else if((type == SIGGP) && (currentLap >= LAPGP)) goto end;
 			else{
 				int k;
 				for(k = 0; k < 22; k++){
 					if(isShMemReadable(sem_race, k))
 					{
+						// Read in shared table
 						tabRead[k] = tabCar[k];
+						localStock.tabResult[k].teamName = tabRead[k].teamName;
+						localStock.tabResult[k].num = tabRead[k].num;
 						localStock.tabResult[k].lnum = tabRead[k].lnum;
+
+						// Calculate lap time
 						localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
 						localStock.tabResult[k].timeGlobal += localStock.tabResult[k].timeLastLap;
+
 						localStock.tabResult[k].retired = tabRead[k].retired;
 						localStock.tabResult[k].pitstop = tabRead[k].pitstop;
-
 						if(localStock.bestDriver.time > localStock.tabResult[k].timeLastLap) // if best lap time is bigger than timeLastLap 
 						{
 							localStock.bestDriver.time = localStock.tabResult[k].timeLastLap;
 							localStock.bestDriver.teamName = localStock.tabResult[k].teamName;
 							localStock.bestDriver.num = localStock.tabResult[k].num;
 						}
+					    // write into the shared mem for monitor
 						semDown(sem_DispSrv, 0);
 						*listStock = localStock;
 						semUp(sem_DispSrv, 0);
@@ -115,6 +138,8 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, int 
 
 	    next:
 	    	show_success("Server", "Race terminated!");
+	    	semReset(sem_control, 0);
+	    	semReset(sem_type, 0);
 	}while(!checkSig(SIGEXIT, sem_control, 0));
 	shmdt(&shm_race);
 	shmdt(&shm_DispSrv);
@@ -123,13 +148,15 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg, int 
 // Sector table as parameter
 // Calculate & return lap time 
 double lapTime(TSect *tabSect){
-    return (tabSect[1].stime + tabSect[2].stime + tabSect[3].stime);
+	double tmp = tabSect[0].stime + tabSect[1].stime + tabSect[2].stime;
+    return tmp;
 }
 
 // Executed when alarm() is at 0
 void endRace(int sig){
     signal(SIGALRM, SIG_IGN);
+    printf("\n-------------------- Alarm ended ------------------\n\n");
 	key_t sem_control_key = ftok(PATH, CONTROL);
-	int sem_control = semget(sem_control, 1, IPC_CREAT | PERMS);
+	int sem_control = semget(sem_control_key, 1, IPC_CREAT | PERMS);
 	sendSig(SIGEND, sem_control, 0);
 }
