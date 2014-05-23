@@ -27,12 +27,12 @@ typedef struct TCar {
 	const char * teamName;
 	bool retired; /* is retired (true) */
 	bool crashed; /* is crashed (true) */
+	bool pitstop;
 	bool ready;
 	int num;
 	int start_position; 
 	int snum;
 	int lnum;
-	int pitstop;
 	int tires; /* sets of tires */
 	double avgSpeed; /* Average speed in real time */
 	double fuelStock; /* fuel stock in liter */

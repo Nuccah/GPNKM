@@ -27,6 +27,9 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
     key_t sem_race_key = ftok(PATH, RACE);
     int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS);
 
+    key_t sem_modif_key = ftok(PATH, MODIF);
+    int sem_modif = semget(sem_race_key, 22, IPC_CREAT | PERMS);
+
     key_t sem_DispSrv_key = ftok(PATH, STOCK);
     int sem_DispSrv = semget(sem_DispSrv_key, 2, IPC_CREAT | PERMS);
 
@@ -49,6 +52,7 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 	for(i=1;i<size;i++){ // Read in pipe the PID of each drivers and stock in table
 		read(pfdDrvSrv, &adr_msg.tabD[i-1], sizeof(pid_t));
 	}
+	close(pfdSrvDrv);close(pfdDrvSrv); // Close remaining pipe FD's because no longer used
 	adr_msg.mtype = ADR;
 	adr_msg.tabD[22] = getpid();	
 	adr_msg.weather = randomWeather(queue_id, adr_msg.tabD); // Weather Selection, Write on MQ for everyone the weather
@@ -61,7 +65,6 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 		int type = 0;
 		while(!((type >= SIGTR1) && (type <= SIGGP))) type = getSig(sem_type, 0);
 		printf("Server received: %d\n", type);
-
 		TSharedStock localStock;
 		localStock.bestDriver.time = 0;
 
@@ -104,29 +107,33 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 				for(k = 0; k < 22; k++){
 					if(isShMemReadable(sem_race, k))
 					{
-						// Read in shared table
-						tabRead[k] = tabCar[k];
-						localStock.tabResult[k].teamName = tabRead[k].teamName;
-						localStock.tabResult[k].num = tabRead[k].num;
-						localStock.tabResult[k].lnum = tabRead[k].lnum;
-
-						// Calculate lap time
-						localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
-						localStock.tabResult[k].timeGlobal += localStock.tabResult[k].timeLastLap;
-
-						localStock.tabResult[k].retired = tabRead[k].retired;
-						localStock.tabResult[k].pitstop = tabRead[k].pitstop;
-						if(localStock.bestDriver.time > localStock.tabResult[k].timeLastLap) // if best lap time is bigger than timeLastLap 
+						if(isShMemReadable(sem_modif, k))
 						{
-							localStock.bestDriver.time = localStock.tabResult[k].timeLastLap;
-							localStock.bestDriver.teamName = localStock.tabResult[k].teamName;
-							localStock.bestDriver.num = localStock.tabResult[k].num;
+								// Read in shared table
+							tabRead[k] = tabCar[k];
+							semDown(sem_modif, k);
+							localStock.tabResult[k].teamName = tabRead[k].teamName;
+							localStock.tabResult[k].num = tabRead[k].num;
+							localStock.tabResult[k].lnum = tabRead[k].lnum;
+
+							// Calculate lap time
+							localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
+							localStock.tabResult[k].timeGlobal += localStock.tabResult[k].timeLastLap;
+
+							localStock.tabResult[k].retired = tabRead[k].retired;
+							localStock.tabResult[k].pitstop = tabRead[k].pitstop;
+							if(localStock.bestDriver.time > localStock.tabResult[k].timeLastLap) // if best lap time is bigger than timeLastLap 
+							{
+								localStock.bestDriver.time = localStock.tabResult[k].timeLastLap;
+								localStock.bestDriver.teamName = localStock.tabResult[k].teamName;
+								localStock.bestDriver.num = localStock.tabResult[k].num;
+							}
+						    // write into the shared mem for monitor
+						    while(!isShMemReadable(sem_DispSrv, DISP_READ));
+							semDown(sem_DispSrv, SRV_WRITE);
+							*listStock = localStock;
+							semUp(sem_DispSrv, SRV_WRITE);
 						}
-					    // write into the shared mem for monitor
-					    while(!isShMemReadable(sem_DispSrv, DISP_READ));
-						semDown(sem_DispSrv, SRV_WRITE);
-						*listStock = localStock;
-						semUp(sem_DispSrv, SRV_WRITE);
 					} 
 					else k--;
 				}

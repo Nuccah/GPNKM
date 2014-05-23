@@ -32,6 +32,7 @@
 #define RACE 12
 #define STOCK 13
 #define PIT 14
+#define MODIF 15
 
 #define RACESHM 22
 #define STOCKSHM 23

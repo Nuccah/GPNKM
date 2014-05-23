@@ -51,9 +51,12 @@ int main (int argc, char *argv[])
 		//***********//
 		// Sema for control shared mem race
 		key_t sem_race_key = ftok(PATH, RACE); // Sema Key generated
+		key_t sem_modif_key = ftok(PATH, MODIF); // Sema Key generated
 		int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
+		int sem_modif = semget(sem_modif_key, 22, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
 		int i;
-		for(i = 0; i < 22; i++)	semReset(sem_race, i);			
+		for(i = 0; i < 22; i++)	semReset(sem_race, i);
+		for(i = 0; i < 22; i++)	semReset(sem_modif, i);				
 		//*****************//
 		//*SHARED MEM INIT*//
 		//*****************//
@@ -76,6 +79,7 @@ int main (int argc, char *argv[])
 		}
 		//Server (Parent)
 		else{
+			close(pfdSrvDrv[0]);close(pfdDrvSrv[1]); // Close unused write/read ends of respective pipes
 			server(queue_id, pfdSrvDrv[1], pfdDrvSrv[0], adr_msg); // Main server function
 			int stat = SIGTERM;
 			wait(&stat); // Wait for any process returning SIGTERM

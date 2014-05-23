@@ -31,7 +31,7 @@ void scoreMonitor(int queue_id, TmsgbufAdr adr_msg, int type){
 							localStock.tabResult[i].lnum, localStock.tabResult[i].timeLastLap);
 					printf("Retired : %s\n", localStock.tabResult[i].retired ? "yes" : "no");
 				}
-			    sleep(1);
+			    sleep(5);
 			}
 		} 
 	}while(!finished);
@@ -118,7 +118,7 @@ void endOfProgram(int queue_id, TmsgbufAdr adr_msg,  int sem_type)
 	sendSig(SIGEXIT, sem_control, 0);
 
 	semctl(sem_type, 0, IPC_RMID, NULL);
-	msgctl(queue_id, IPC_RMID, NULL);
+	msgctl(queue_id, IPC_RMID, NULL); // DELETION OF MESSAGE QUEUE //
 	semctl(sem_DispSrv, DISP_READ, IPC_RMID, NULL);
 	semctl(sem_DispSrv, SRV_WRITE, IPC_RMID, NULL);
 	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
