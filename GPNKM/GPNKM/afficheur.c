@@ -13,7 +13,6 @@ void scoreMonitor(int queue_id, TmsgbufAdr adr_msg, int type){
 	TSharedStock *listStock = (TSharedStock *) shmat(shm_DispSrv, NULL, 0); 
 	waitSig(SIGSTART, sem_control, 0);
 	printf("Run begins!!!\n\n");
-	sleep(700);
 	bool finished = false;
 	TSharedStock localStock;
 	do{

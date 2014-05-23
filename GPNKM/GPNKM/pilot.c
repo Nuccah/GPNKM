@@ -72,8 +72,8 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 			pilot->lapTimes[lap].tabSect[i].stime = sectorTime(pilot->lapTimes[lap].tabSect[i].speed, i);
 			usleep(sectorSleep(pilot->lapTimes[lap].tabSect[i].stime, 0.15));
 			pilot->fuelStock = fuelConsumption(pilot->fuelStock);
-			printf("[Pilot %d] - Lap: %d | Time: %.2lf\n", pilot->num, lap,
-					pilot->lapTimes[lap].tabSect[i].stime);
+		/*	printf("[Pilot %d] - Lap: %d | Time: %.2lf\n", pilot->num, lap,
+					pilot->lapTimes[lap].tabSect[i].stime);*/
 			if(pilot->fuelStock <= 0) pilot->retired = true;
 			tireStatus = tireWear(tireStatus, weatherFactor);
 			if(pilot->fuelStock <= 0) pilot->retired = true;
@@ -99,7 +99,7 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 						semDown(sem_race, numCell);
 						tabCar[numCell].pitstop = pilot->pitstop;
 						semUp(sem_race, numCell);
-						semReset(sem_modif, numCell);
+						semUp(sem_modif, numCell);
 						usleep(sectorSleep(pitstopsleep, 0.1));
 						pilot->lapTimes[lap].tabSect[i].stime += pitstopsleep;
 						exitPitstop(numPit, sem_pitstop);
@@ -111,7 +111,7 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 		semDown(sem_race, numCell);
 		memcpy(&tabCar[numCell], pilot, sizeof(TCar));
 		semUp(sem_race, numCell);
-		semReset(sem_modif, numCell);
+		semUp(sem_modif, numCell);
 		if(pilot->retired)
 			finished = true;
 		if(i==2)

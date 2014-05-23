@@ -28,7 +28,7 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
     int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS);
 
     key_t sem_modif_key = ftok(PATH, MODIF);
-    int sem_modif = semget(sem_race_key, 22, IPC_CREAT | PERMS);
+    int sem_modif = semget(sem_modif_key, 22, IPC_CREAT | PERMS);
 
     key_t sem_DispSrv_key = ftok(PATH, STOCK);
     int sem_DispSrv = semget(sem_DispSrv_key, 2, IPC_CREAT | PERMS);
@@ -76,6 +76,7 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 			localStock.tabResult[i].num = tabRead[i].num;
 			localStock.tabResult[i].timeGlobal = 0;
 			localStock.tabResult[i].timeLastLap = 0;
+			semDown(sem_modif, i);
 		}
 		sleep(1);
 		// Init signal handler if race type based on time
@@ -83,7 +84,6 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 
 		// Send start signal
 		sendSig(SIGSTART, sem_control, 0); 
-		sleep(5);
 		switch(type){
 			case SIGTR1: alarm(54);
 					break;
@@ -108,18 +108,19 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 				for(k = 0; k < 22; k++){
 					if(isShMemReadable(sem_modif, k))
 					{
+						semDown(sem_modif, k);
 						if(isShMemReadable(sem_race, k))
 						{
 								// Read in shared table
 							memcpy(&tabRead[k], &tabCar[k], sizeof(TCar));
-							semDown(sem_modif, k);
+						//	
 							localStock.tabResult[k].lnum = tabRead[k].lnum;
 
 							// Calculate lap time
 							localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
 							localStock.tabResult[k].timeGlobal += localStock.tabResult[k].timeLastLap;
-							printf("[Driver %d] - Lap: %d | Time: %.2lf\n", localStock.tabResult[k].num,
-									localStock.tabResult[k].lnum, localStock.tabResult[k].timeLastLap);
+						/*	printf("[Driver %d] - Lap: %d | Time: %.2lf\n", localStock.tabResult[k].num,
+									localStock.tabResult[k].lnum, localStock.tabResult[k].timeLastLap);*/
 							localStock.tabResult[k].retired = tabRead[k].retired;
 							localStock.tabResult[k].pitstop = tabRead[k].pitstop;
 							if(localStock.bestDriver.time > localStock.tabResult[k].timeLastLap) // if best lap time is bigger than timeLastLap 
