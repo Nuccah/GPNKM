@@ -21,7 +21,7 @@ void scoreMonitor(int queue_id, TmsgbufAdr adr_msg, int type){
 		else{			
 			if(isShMemReadable(sem_DispSrv, 0)){
 				semDown(sem_DispSrv, DISP_READ);
-				localStock = *listStock;
+				memcpy(&localStock, listStock, sizeof(TSharedStock));
 				semUp(sem_DispSrv, DISP_READ);
 				int i;
 				system("clear");

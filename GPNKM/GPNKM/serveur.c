@@ -111,10 +111,8 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 						if(isShMemReadable(sem_race, k))
 						{
 								// Read in shared table
-							tabRead[k] = tabCar[k];
+							memcpy(&tabRead[k], &tabCar[k], sizeof(TCar));
 							semDown(sem_modif, k);
-							localStock.tabResult[k].teamName = tabRead[k].teamName;
-							localStock.tabResult[k].num = tabRead[k].num;
 							localStock.tabResult[k].lnum = tabRead[k].lnum;
 
 							// Calculate lap time
@@ -133,7 +131,7 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 						    // write into the shared mem for monitor
 						    while(!isShMemReadable(sem_DispSrv, DISP_READ));
 							semDown(sem_DispSrv, SRV_WRITE);
-							*listStock = localStock;
+							memcpy(listStock, &localStock, sizeof(TSharedStock));
 							semUp(sem_DispSrv, SRV_WRITE);
 						}
 						else k--;

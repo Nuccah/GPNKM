@@ -109,7 +109,7 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 			}
 		}
 		semDown(sem_race, numCell);
-		tabCar[numCell] = (*pilot);
+		memcpy(&tabCar[numCell], pilot, sizeof(TCar));
 		semUp(sem_race, numCell);
 		semReset(sem_modif, numCell);
 		if(pilot->retired)
