@@ -134,7 +134,7 @@ void pilot(int number, int queue_id, TmsgbufPilot pilot_msg, int numCell, pid_t 
 	key_t sem_race_key = ftok(PATH, RACE);
 	int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS);
 
-	key_t sem_modif_key = ftok(PATH, RACE);
+	key_t sem_modif_key = ftok(PATH, MODIF);
 	int sem_modif = semget(sem_modif_key, 22, IPC_CREAT | PERMS);
 
 	key_t shm_race_key = ftok(PATH, RACESHM);

@@ -82,7 +82,8 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 		if(type != SIGGP) signal(SIGALRM, endRace);
 
 		// Send start signal
-		sendSig(SIGSTART, sem_control, 0); // THIS POINT BUUUUUUUGS !!!! WTF?
+		sendSig(SIGSTART, sem_control, 0); 
+		sleep(5);
 		switch(type){
 			case SIGTR1: alarm(54);
 					break;
