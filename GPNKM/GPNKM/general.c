@@ -18,14 +18,14 @@ void semUp(int sem_id, int sem_channel){
 	semop(sem_id, &op, 1);
 }
 
-// Reset the sema to SIGFREE (default = 1)
+// Reset the sema to 1
 void semReset(int sem_id, int sem_channel){
-	semctl(sem_id, sem_channel, SETVAL, SIGFREE);
+	semctl(sem_id, sem_channel, SETVAL, 1);
 }
 
 // Check if shared mem is readable
 bool isShMemReadable(int sem_id, int sem_channel){
-	if(semctl(sem_id, sem_channel, GETVAL, 1) == SIGFREE) return true;
+	if(semctl(sem_id, sem_channel, GETVAL) == 1) return true;
 	return false;
 }
 

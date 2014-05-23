@@ -105,9 +105,9 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 			else{
 				int k;
 				for(k = 0; k < 22; k++){
-					if(isShMemReadable(sem_race, k))
+					if(isShMemReadable(sem_modif, k))
 					{
-						if(isShMemReadable(sem_modif, k))
+						if(isShMemReadable(sem_race, k))
 						{
 								// Read in shared table
 							tabRead[k] = tabCar[k];
@@ -119,7 +119,8 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 							// Calculate lap time
 							localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
 							localStock.tabResult[k].timeGlobal += localStock.tabResult[k].timeLastLap;
-
+							printf("[Driver %d] - Lap: %d | Time: %.2lf\n", localStock.tabResult[k].num,
+									localStock.tabResult[k].lnum, localStock.tabResult[k].timeLastLap);
 							localStock.tabResult[k].retired = tabRead[k].retired;
 							localStock.tabResult[k].pitstop = tabRead[k].pitstop;
 							if(localStock.bestDriver.time > localStock.tabResult[k].timeLastLap) // if best lap time is bigger than timeLastLap 
@@ -134,8 +135,8 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 							*listStock = localStock;
 							semUp(sem_DispSrv, SRV_WRITE);
 						}
+						else k--;
 					} 
-					else k--;
 				}
 				if(type == SIGGP) currentLap++;
 			}	    

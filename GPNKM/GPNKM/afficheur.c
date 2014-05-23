@@ -13,13 +13,12 @@ void scoreMonitor(int queue_id, TmsgbufAdr adr_msg, int type){
 	TSharedStock *listStock = (TSharedStock *) shmat(shm_DispSrv, NULL, 0); 
 	waitSig(SIGSTART, sem_control, 0);
 	printf("Run begins!!!\n\n");
-	sleep(2);
+	sleep(700);
 	bool finished = false;
 	TSharedStock localStock;
 	do{
 		if(checkSig(SIGEND, sem_control, 0)) finished = true;
 		else{			
-			printf("CA va\n");
 			if(isShMemReadable(sem_DispSrv, 0)){
 				semDown(sem_DispSrv, DISP_READ);
 				localStock = *listStock;
@@ -31,7 +30,7 @@ void scoreMonitor(int queue_id, TmsgbufAdr adr_msg, int type){
 							localStock.tabResult[i].lnum, localStock.tabResult[i].timeLastLap);
 					printf("Retired : %s\n", localStock.tabResult[i].retired ? "yes" : "no");
 				}
-			    sleep(5);
+			    sleep(1);
 			}
 		} 
 	}while(!finished);
