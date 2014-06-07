@@ -87,11 +87,4 @@
 #define MAXCHANGE 7
 #define MINREPAIR 5
 #define MAXREPAIR 10
-
-/* fuel data (in liter) */
-#define FUELSMAX 150.0
-#define FUELSMIN 145.0
-#define FUELCMAX 0.10
-#define FUELCMIN 0.02
-
 #endif

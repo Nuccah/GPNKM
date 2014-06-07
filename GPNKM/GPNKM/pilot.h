@@ -13,8 +13,6 @@ unsigned int sectorSleep(double time, double factor);
 int getPitstop(int number);
 int forkPilots();
 double tireWear(double tirestatus, int weather);
-double fuelConsumption(int fuelStock);
-double fuelStart();
 double randomNumber(double min, double max);
 double speedWeather(int weather, bool isDamaged);
 double sectorTime(double speed, int sector);

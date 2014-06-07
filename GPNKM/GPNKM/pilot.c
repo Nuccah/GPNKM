@@ -45,7 +45,6 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 	pilot->crashed = false;
 	pilot->retired = false;
 	pilot->pitstop = false;
-	pilot->fuelStock = fuelStart();
 	pilot->lnum = 0;
 	pilot->avgSpeed = 0.0;
 	double pitstopsleep = 0.0;
@@ -72,9 +71,6 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 			pilot->lapTimes[lap].tabSect[i].speed = speedWeather(weatherFactor, isDamaged);
 			pilot->lapTimes[lap].tabSect[i].stime = sectorTime(pilot->lapTimes[lap].tabSect[i].speed, i);
 			usleep(sectorSleep(pilot->lapTimes[lap].tabSect[i].stime, 0.15));
-			pilot->fuelStock = fuelConsumption(pilot->fuelStock);
-
-			if(pilot->fuelStock <= 0) pilot->retired = true;
 			tireStatus = tireWear(tireStatus, weatherFactor);
 			if(!pilot->retired)
 			{
@@ -108,7 +104,7 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 		semDown(sem_race, numCell);
 		memcpy(&tabCar[numCell], pilot, sizeof(TCar)); // Put cell content into the shared memory
 		semUp(sem_race, numCell);
-		
+
 		semUp(sem_modif, numCell); // Send to server signal of data change
 		
 		if(pilot->retired) finished = true;
@@ -199,15 +195,6 @@ double changeTime()
 double repairTime()
 {
     return randomNumber(MINREPAIR, MAXREPAIR);
-}
-
-// Function that returns fuel consumption in liters between 0.3L & 0.7L per sector
-double fuelConsumption(int fuelStock){
-    return (fuelStock - randomNumber(FUELCMIN, FUELCMAX));
-}
-
-double fuelStart(){
-    return randomNumber(FUELSMIN, FUELSMAX);
 }
 
 double tireWear(double tireStatus, int weather){
