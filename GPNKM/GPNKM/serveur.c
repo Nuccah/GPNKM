@@ -23,6 +23,10 @@ void server(){
     key_t sem_modif_key = ftok(PATH, MODIF);
     int sem_modif = semget(sem_modif_key, 22, IPC_CREAT | PERMS);
 
+    key_t sem_modifa_key = ftok(PATH, MODIFA); // Sema Key generated
+	int sem_modifa = semget(sem_modifa_key, 1, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
+	semDown(sem_modifa,0);
+
     key_t sem_DispSrv_key = ftok(PATH, STOCK);
     int sem_DispSrv = semget(sem_DispSrv_key, 2, IPC_CREAT | PERMS);
 
@@ -51,13 +55,17 @@ void server(){
 		// Wait for drivers ready
 		for(i = 0; i < 22; i++){
 			while(!isShMemReadable(sem_race, i));
-			tabRead[i] = tabCar[i];
+			memcpy(&tabRead[i], &tabCar[i], sizeof(TCar));
 			localStock.tabResult[i].teamName = tabRead[i].teamName;
 			localStock.tabResult[i].num = tabRead[i].num;
 			localStock.tabResult[i].timeGlobal = 0;
 			localStock.tabResult[i].timeLastLap = 0;
 			semDown(sem_modif, i);
 		}
+		semDown(sem_DispSrv, SRV_WRITE);
+		memcpy(listStock, &localStock, sizeof(TSharedStock)); // Put stock content into shared memory
+		semUp(sem_DispSrv, SRV_WRITE);
+		semReset(sem_modifa,0);
 		sleep(1);
 		// Init signal handler if race type based on time
 		if(type != SIGGP) signal(SIGALRM, endRace);
@@ -116,6 +124,7 @@ void server(){
 							semDown(sem_DispSrv, SRV_WRITE);
 							memcpy(listStock, &localStock, sizeof(TSharedStock)); // Put stock content into shared memory
 							semUp(sem_DispSrv, SRV_WRITE);
+							semReset(sem_modifa,0);
 						}
 						else k--;
 					} 

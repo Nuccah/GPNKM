@@ -8,6 +8,8 @@ void scoreMonitor(int sem_control, int type){
 	int sem_DispSrv = semget(sem_DispSrv_key, 2, IPC_CREAT | PERMS);
 	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
 	int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), S_IRUSR);
+	key_t sem_modifa_key = ftok(PATH, MODIFA); // Sema Key generated
+	int sem_modifa = semget(sem_modifa_key, 1, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
 	TSharedStock *listStock = (TSharedStock *) shmat(shm_DispSrv, NULL, 0); 
 	waitSig(SIGSTART, sem_control, 0);
 	printf("Run begins!!!\n\n");
@@ -15,23 +17,26 @@ void scoreMonitor(int sem_control, int type){
 	TSharedStock localStock;
 	do{
 		if(checkSig(SIGEND, sem_control, 0)) finished = true;
-		else{			
-			if(isShMemReadable(sem_DispSrv, 0)){
-				semDown(sem_DispSrv, DISP_READ);
-				memcpy(&localStock, listStock, sizeof(TSharedStock));
-				semUp(sem_DispSrv, DISP_READ);
-				int i;
-				system("clear");
-				for(i = 0; i < 22; i++){
-					if(localStock.tabResult[i].num < 10) printf("[Driver 0%d] ", localStock.tabResult[i].num); 
-					else printf("[Driver %d] ", localStock.tabResult[i].num);
-					printf("lap: %d | time: %.2lf sec | ",
-							localStock.tabResult[i].lnum, localStock.tabResult[i].timeLastLap);
-					printf("Retired : %s", localStock.tabResult[i].retired ? "yes" : "no");
-					printf(" | Pitstop : %s\n", localStock.tabResult[i].pitstop ? "yes" : "no");
+		else{
+			if(isShMemReadable(sem_modifa, 0)){
+				semDown(sem_modifa,0);			
+				if(isShMemReadable(sem_DispSrv, 0)){
+					semDown(sem_DispSrv, DISP_READ);
+					memcpy(&localStock, listStock, sizeof(TSharedStock));
+					semUp(sem_DispSrv, DISP_READ);
+					int i;
+				//	system("clear");
+					for(i = 0; i < 22; i++){
+						if(localStock.tabResult[i].num < 10) printf("[Driver 0%d] ", localStock.tabResult[i].num); 
+						else printf("[Driver %d] ", localStock.tabResult[i].num);
+						printf("lap: %d | time: %.2lf sec | ",
+								localStock.tabResult[i].lnum, localStock.tabResult[i].timeLastLap);
+						printf("Retired : %s", localStock.tabResult[i].retired ? "yes" : "no");
+						printf(" | Pitstop : %s\n", localStock.tabResult[i].pitstop ? "yes" : "no");
+					}
 				}
-			    sleep(1);
 			}
+
 		} 
 	}while(!finished);
 	shmdt(&shm_DispSrv);

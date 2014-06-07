@@ -12,6 +12,10 @@ int main (int argc, char *argv[])
 	int sem_control = semget(sem_control_key, 1, IPC_CREAT | PERMS);
 	semReset(sem_control, 0);
 
+	key_t sem_modifa_key = ftok(PATH, MODIFA); // Sema Key generated
+	int sem_modifa = semget(sem_modifa_key, 1, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
+	semReset(sem_modifa, 0);
+
 	// Sema for control Shared Mem Stock
 	key_t sem_DispSrv_key = ftok(PATH, STOCK);
 	int sem_DispSrv = semget(sem_DispSrv_key, 2, IPC_CREAT | PERMS);
@@ -45,7 +49,8 @@ int main (int argc, char *argv[])
 		int sem_modif = semget(sem_modif_key, 22, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
 		int i;
 		for(i = 0; i < 22; i++)	semReset(sem_race, i);
-		for(i = 0; i < 22; i++)	semReset(sem_modif, i);				
+		for(i = 0; i < 22; i++)	semReset(sem_modif, i);
+		for(i = 0; i < 22; i++)	semDown(sem_modif, i);					
 		//*****************//
 		//*SHARED MEM INIT*//
 		//*****************//
