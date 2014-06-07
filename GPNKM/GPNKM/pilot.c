@@ -74,7 +74,7 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 		{
 			pilot->lapTimes[lap].tabSect[i].speed = speedWeather(weatherFactor, isDamaged);
 			pilot->lapTimes[lap].tabSect[i].stime = sectorTime(pilot->lapTimes[lap].tabSect[i].speed, i);
-			usleep(sectorSleep(pilot->lapTimes[lap].tabSect[i].stime, 0.2));
+			sleep(pilot->lapTimes[lap].tabSect[i].stime*0.1);
 			tireStatus = tireWear(tireStatus, weatherFactor);
 			if(!pilot->retired)
 			{
@@ -97,7 +97,7 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 							isDamaged = false;
 						}
 						pilot->pitstop = true;
-						usleep(sectorSleep(pitstopsleep, 0.2));
+						sleep(pitstopsleep*0.1);
 						pilot->lapTimes[lap].tabSect[i].stime += pitstopsleep;
 						// PITSTOP END
 					}

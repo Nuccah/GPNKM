@@ -102,15 +102,13 @@ void server(){
 						{
 								// Read in shared table
 							memcpy(&tabRead[k], &tabCar[k], sizeof(TCar));
-							localStock.tabResult[k].num = tabRead[k].num;
-							localStock.tabResult[k].teamName = tabRead[k].teamName;
 							localStock.tabResult[k].lnum = tabRead[k].lnum;
+							localStock.tabResult[k].snum = tabRead[k].snum;
 
 							// Calculate lap time
 							localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
 							localStock.tabResult[k].timeGlobal += localStock.tabResult[k].timeLastLap;
-						/*	printf("[Driver %d] - Lap: %d | Time: %.2lf\n", localStock.tabResult[k].num,
-									localStock.tabResult[k].lnum, localStock.tabResult[k].timeLastLap);*/
+
 							localStock.tabResult[k].retired = tabRead[k].retired;
 							localStock.tabResult[k].pitstop = tabRead[k].pitstop;
 							if(localStock.bestDriver.time > localStock.tabResult[k].timeLastLap) // if best lap time is bigger than timeLastLap 
@@ -120,6 +118,8 @@ void server(){
 								localStock.bestDriver.num = localStock.tabResult[k].num;
 							}
 						    // write into the shared mem for monitor
+						    qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpfunct);
+							 
 						    while(!isShMemReadable(sem_DispSrv, DISP_READ));
 							semDown(sem_DispSrv, SRV_WRITE);
 							memcpy(listStock, &localStock, sizeof(TSharedStock)); // Put stock content into shared memory
@@ -127,7 +127,8 @@ void server(){
 							semReset(sem_modifa,0);
 						}
 						else k--;
-					} 
+					}
+
 				}
 				if(type == SIGGP) currentLap++;
 			}	    
@@ -158,4 +159,23 @@ void endRace(int sig){
 	key_t sem_control_key = ftok(PATH, CONTROL);
 	int sem_control = semget(sem_control_key, 1, IPC_CREAT | PERMS);
 	sendSig(SIGEND, sem_control, 0);
+}
+
+int cmpfunct(TResults *a, TResults *b){
+	if(a->lnum == b->lnum)
+	{
+		if(a->snum ==  b->snum)
+			if (a->timeGlobal <  b->timeGlobal) return -1;
+			else if (a->timeGlobal >  b->timeGlobal) return 1;
+			else return 0;
+		else
+		{
+			if (a->snum < b->snum) return 1;
+			else return -1;
+		} 
+			
+	}
+	else
+		if (a->lnum < b->lnum) return 1;
+		else return -1;
 }

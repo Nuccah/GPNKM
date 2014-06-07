@@ -66,32 +66,11 @@ typedef struct TPod {
 	TCar third;
 } TPod;
 
-/* Team Type */
-typedef struct TTeam {
-	const char *team;
-	TCar* tabCar[2];
-	bool pitStop;
-} TTeam;
-
-typedef struct msgbufServ {
-	long mtype;     /* message type, must be > 0 */
-	int mInt;  /* message data */
-} TmsgbufServ;
-
-typedef struct TmsgbufAdr { // Afficheur de Resultat
-	long mtype;     /* message type, must be > 0 */
-	int weather; /* weather data */
-} TmsgbufAdr;
-
-typedef struct msgbufPilot {
-	long mtype;     /* message type, must be > 0 */
-	struct TCar car;  /* message data */
-} TmsgbufPilot;
-
 typedef struct TResults{
 	int num;
 	const char * teamName;
 	int lnum;
+	int snum;
 	double timeLastLap;
 	double timeGlobal;
 	bool retired; /* is retired (true) */

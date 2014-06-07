@@ -27,16 +27,15 @@ void scoreMonitor(int sem_control, int type){
 					int i;
 				//	system("clear");
 					for(i = 0; i < 22; i++){
-						if(localStock.tabResult[i].num < 10) printf("[Driver 0%d] ", localStock.tabResult[i].num); 
-						else printf("[Driver %d] ", localStock.tabResult[i].num);
+						if(localStock.tabResult[i].num < 10) printf("[%d] | [Driver 0%d] ", i+1, localStock.tabResult[i].num); 
+						else printf("[%d] | [Driver %d] ", i+1, localStock.tabResult[i].num);
 						printf("lap: %d | time: %.2lf sec | ",
-								localStock.tabResult[i].lnum, localStock.tabResult[i].timeLastLap);
+								localStock.tabResult[i].lnum, localStock.tabResult[i].timeGlobal);
 						printf("Retired : %s", localStock.tabResult[i].retired ? "yes" : "no");
 						printf(" | Pitstop : %s\n", localStock.tabResult[i].pitstop ? "yes" : "no");
 					}
 				}
 			}
-
 		} 
 	}while(!finished);
 	shmdt(&shm_DispSrv);
