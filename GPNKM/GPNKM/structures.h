@@ -81,7 +81,6 @@ typedef struct msgbufServ {
 
 typedef struct TmsgbufAdr { // Afficheur de Resultat
 	long mtype;     /* message type, must be > 0 */
-	pid_t tabD[23];  /* PID data */
 	int weather; /* weather data */
 } TmsgbufAdr;
 

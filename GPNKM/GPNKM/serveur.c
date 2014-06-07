@@ -1,22 +1,15 @@
 #include "serveur.h"
 
 // Chooses random weather condition. Returns weather condition in string form
-int randomWeather(int queue_id, pid_t *tabD){
+int randomWeather(){
 	srand(time(NULL));
-	int number = (rand() % (7-1)) + 1;
-	int i;
-	TmsgbufServ weatherInfo;
-	if(number >= 4) number = 3;
-	else if(number >= 2) number = 2;
-	for(i=0; i<(DRIVERS-1); i++){
-		weatherInfo.mtype = tabD[i];
-		weatherInfo.mInt = number;
-		msgsnd(queue_id, &weatherInfo, sizeof(struct msgbufServ), 0);
-	}
-	return number;
+	// Random system following rand() % N + m 
+	// where N = number of numbers in the range
+	// and m = minimal number to start
+	return (rand() % 3 + 5); // Here we want a random number between 5 and 7 so N = 3 and m = 5
 }
 
-void server(int queue_id, TmsgbufAdr adr_msg){
+void server(){
     // INIT SECTION
     key_t sem_type_key = ftok(PATH, TYPE);
     int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
@@ -40,18 +33,14 @@ void server(int queue_id, TmsgbufAdr adr_msg){
 	key_t shm_race_key = ftok(PATH, RACESHM);
 	int shm_race = shmget(shm_race_key, 22*sizeof(TCar), S_IRUSR);
 	TCar *tabCar = (TCar *) shmat(shm_race, NULL, 0);
-    // END INIT SECTION
+    
     int i;
-	char* msg;
-	adr_msg.mtype = ADR;
-	adr_msg.tabD[22] = getpid();	
-	adr_msg.weather = randomWeather(queue_id, adr_msg.tabD); // Weather Selection, Write on MQ for everyone the weather
-	msgsnd(queue_id, &adr_msg, sizeof(struct TmsgbufAdr), 0);
+    // Send weather to monitor and pilots
+	sendSig(randomWeather(), sem_control, 0);
 	TCar tabRead[22];
 	show_success("Server", "Initialisation complete");
-
+	// END INIT SECTION
 	do{
-		semReset(sem_control, 0);
 		// Wait race type from Monitor
 		int type = 0;
 		while(!((type >= SIGTR1) && (type <= SIGGP))) type = getSig(sem_type, 0);
@@ -72,7 +61,7 @@ void server(int queue_id, TmsgbufAdr adr_msg){
 		sleep(1);
 		// Init signal handler if race type based on time
 		if(type != SIGGP) signal(SIGALRM, endRace);
-
+		semReset(sem_control, 0);
 		// Send start signal
 		sendSig(SIGSTART, sem_control, 0); 
 		switch(type){
@@ -89,6 +78,7 @@ void server(int queue_id, TmsgbufAdr adr_msg){
 			case SIGQU3: alarm(8);
 					break;
 		}
+		semReset(sem_type, 0);
 		bool finished = false;
 		int currentLap = 0;
 		do {
@@ -104,7 +94,8 @@ void server(int queue_id, TmsgbufAdr adr_msg){
 						{
 								// Read in shared table
 							memcpy(&tabRead[k], &tabCar[k], sizeof(TCar));
-						//	
+							localStock.tabResult[k].num = tabRead[k].num;
+							localStock.tabResult[k].teamName = tabRead[k].teamName;
 							localStock.tabResult[k].lnum = tabRead[k].lnum;
 
 							// Calculate lap time
@@ -135,7 +126,6 @@ void server(int queue_id, TmsgbufAdr adr_msg){
 		goto next;
 		end: // Terminate GP and send all last informations to monitor
 			sendSig(SIGEND, sem_control, 0);
-
 	    next:
 	    	show_success("Server", "Race terminated!");
 	    	sendSig(SIGEND, sem_control, 0);

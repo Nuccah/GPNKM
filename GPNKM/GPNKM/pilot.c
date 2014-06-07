@@ -1,9 +1,8 @@
 #include "pilot.h"
 
-int forkPilots(int queue_id, TmsgbufPilot pilot_msg){
+int forkPilots(){
 	int i;
 	pid_t pid;
-	int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
 	/*SEMA PITSTOP INIT*/
 	key_t sem_pitstop_key = ftok(PATH, PIT); // Sema Key generated
 	int sem_pitstop = semget(sem_pitstop_key, 11, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
@@ -16,11 +15,10 @@ int forkPilots(int queue_id, TmsgbufPilot pilot_msg){
          	printf("Error while attempting Fork (Pilot/Pilot)");
           	exit(EXIT_FAILURE);
         }
-      	if(pid==0){ // DRIVERS //
-			int number;
+      	if(pid == 0){ // DRIVERS //
 			int pidNum = getpid();
 			srand((pidNum*10)+time(NULL));
-          	pilot(drivers[i], queue_id, pilot_msg, i, pidNum);
+          	pilot(i, pidNum);
        	}
     }
 	int status = 0;
@@ -54,15 +52,20 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 	double tireStatus = 100.0;
 	while(!finished)
 	{
+		if(pilot->pitstop == true) pilot->pitstop = false;
 		if(i == 3)
 		{
 			i = 0;
-			lap++;
+			lap += 1;
 		} 
 		pilot->lnum = lap;
 		pilot->snum = i;
 		isDamaged = damaged();
+		//if(pilot->num < 10) printf("[Pilot 0%d] ", pilot->num);
+		//else printf("[Pilot %d] ", pilot->num);
 		if(isDamaged) pilot->crashed = crashed();
+		//printf("Damaged? %s", isDamaged ? "yes" : "no");
+		//printf(" | Crashed? %s", pilot->crashed ? "yes" : "no"); 
 		if(pilot->crashed) pilot->retired = true;
 		else
 		{
@@ -70,11 +73,9 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 			pilot->lapTimes[lap].tabSect[i].stime = sectorTime(pilot->lapTimes[lap].tabSect[i].speed, i);
 			usleep(sectorSleep(pilot->lapTimes[lap].tabSect[i].stime, 0.15));
 			pilot->fuelStock = fuelConsumption(pilot->fuelStock);
-		/*	printf("[Pilot %d] - Lap: %d | Time: %.2lf\n", pilot->num, lap,
-					pilot->lapTimes[lap].tabSect[i].stime);*/
+
 			if(pilot->fuelStock <= 0) pilot->retired = true;
 			tireStatus = tireWear(tireStatus, weatherFactor);
-			if(pilot->fuelStock <= 0) pilot->retired = true;
 			if(!pilot->retired)
 			{
 				if((i == 2) && (tiresWorn(tireStatus) || isDamaged)){
@@ -86,7 +87,8 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 						{
 							pilot->tires = pilot->tires - 1;
 							if (pilot->tires < 0) pilot->retired = true;
-							tireStatus = 100;
+							//printf(" | Tires out? %s", (pilot->tires < 0) ? "yes" : "no");
+							tireStatus = 100.0;
 							pitstopsleep += changeTime();
 						}
 						if(isDamaged)
@@ -95,14 +97,9 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 							isDamaged = false;
 						}
 						pilot->pitstop = true;
-						semDown(sem_race, numCell);
-						tabCar[numCell].pitstop = pilot->pitstop;
-						semUp(sem_race, numCell);
-						semUp(sem_modif, numCell);
 						usleep(sectorSleep(pitstopsleep, 0.1));
 						pilot->lapTimes[lap].tabSect[i].stime += pitstopsleep;
 						exitPitstop(numPit, sem_pitstop);
-						pilot->pitstop = false;
 						// PITSTOP END
 					}
 				}
@@ -115,7 +112,8 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 		semUp(sem_modif, numCell); // Send to server signal of data change
 		
 		if(pilot->retired) finished = true;
-		
+		//printf(" | Retired? %s", pilot->retired ? "yes" : "no");
+		//printf("\n");
 		if(i==2)
 		{
 			if (checkSig(SIGEND, sem_control, 0)) finished = true;
@@ -125,7 +123,7 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 	sendOver(tabCar, sem_race, numCell, pilot);
 }
 
-void pilot(int number, int queue_id, TmsgbufPilot pilot_msg, int numCell, pid_t pid){	
+void pilot(int numCell, pid_t pid){	
 	// INIT SECTION
 	key_t sem_type_key = ftok(PATH, TYPE);
 	int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
@@ -143,29 +141,19 @@ void pilot(int number, int queue_id, TmsgbufPilot pilot_msg, int numCell, pid_t 
 	int shm_race = shmget(shm_race_key, 22*sizeof(TCar), S_IWUSR);
 	TCar *tabCar = (TCar *)shmat(shm_race, NULL, 0);
 	// END INIT SECTION
-	TmsgbufServ weatherInfo;
+	int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
+	int weather = 1;
 	TCar pilot;
-	pilot.num = number;
+	pilot.num = drivers[numCell];
 	pilot.teamName = getTeamName(pilot.num); 
-	pilot_msg.mtype = SERVER;
-	pilot_msg.car = pilot;
-	msgsnd(queue_id, &pilot_msg, sizeof(struct msgbufPilot), 0);
-	msgrcv(queue_id, &weatherInfo, sizeof(struct msgbufServ), pid, 0);
-	pilot.tires = chooseTires(weatherInfo.mInt);
+	
+	// Wait weather sig from server
+	while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 0);
+	pilot.tires = chooseTires(weather);
 	do{
 		int race = 0;
 		while(!((race >= SIGTR1) && (race <= SIGGP))) race = getSig(sem_type, 0);
-		startRace(tabCar, sem_race, sem_modif, numCell, &pilot, sem_control, weatherInfo.mInt);
-		/*switch(race)
-		{
-			case SIGTR1: race(tabCar, sem_race, numCell, &pilot, sem_control, weatherInfo.mInt);
-			case SIGTR2: race(tabCar, sem_race, numCell, &pilot, sem_control, weatherInfo.mInt);
-			case SIGTR3: race(tabCar, sem_race, numCell, &pilot, sem_control, weatherInfo.mInt);
-			case SIGQU1:race(tabCar, sem_race, numCell, &pilot, sem_control, weatherInfo.mInt);
-			case SIGQU2:race(tabCar, sem_race, numCell, &pilot, sem_control, weatherInfo.mInt);
-			case SIGQU3: race(tabCar, sem_race, numCell, &pilot, sem_control, weatherInfo.mInt);
-			case SIGGP: race(tabCar, sem_race, numCell, &pilot, sem_control, weatherInfo.mInt);
-		}*/
+		startRace(tabCar, sem_race, sem_modif, numCell, &pilot, sem_control, weather);
 	}while(!checkSig(SIGEXIT, sem_control, 0));
 	shmdt(&shm_race);
 
@@ -181,9 +169,9 @@ bool damaged(){
 
 int chooseTires(int weather){
 	switch( weather ) {
-    	case 1: return WETS;
-    	case 2: return INTERMEDIATES;
-    	case 3: return SLICKS;
+    	case SIGRAIN: return WETS;
+    	case SIGWET: return INTERMEDIATES;
+    	case SIGDRY: return SLICKS;
 	}
 }
 
@@ -224,9 +212,9 @@ double fuelStart(){
 
 double tireWear(double tireStatus, int weather){
     switch( weather ) {
-    	case 1: return (tireStatus - randomNumber(TIREWEARMIN, TIREWEARMAX));
-    	case 2: return (tireStatus - randomNumber((TIREWEARMIN*WETFACTOR), (TIREWEARMAX*WETFACTOR)));
-    	case 3: return (tireStatus - randomNumber((TIREWEARMIN*DRYFACTOR), (TIREWEARMAX*DRYFACTOR)));
+    	case SIGRAIN: return (tireStatus - randomNumber(TIREWEARMIN, TIREWEARMAX));
+    	case SIGWET: return (tireStatus - randomNumber((TIREWEARMIN*WETFACTOR), (TIREWEARMAX*WETFACTOR)));
+    	case SIGDRY: return (tireStatus - randomNumber((TIREWEARMIN*DRYFACTOR), (TIREWEARMAX*DRYFACTOR)));
 	}
 }
 
@@ -244,11 +232,11 @@ double speedWeather(int weather, bool isDamaged){
     else speed = randomNumber(MINSPEED, MAXSPEED);
     double factor;
     switch(weather){
-    	case 3: factor = DRY;
+    	case SIGDRY: factor = DRY;
     			break;
-    	case 2: factor = WET;
+    	case SIGWET: factor = WET;
 				break;
-		case 1: factor = RAIN;
+		case SIGRAIN: factor = RAIN;
 				break;
 	}
     return (speed * factor);

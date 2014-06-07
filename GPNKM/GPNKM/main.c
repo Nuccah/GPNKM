@@ -3,12 +3,6 @@
 int main (int argc, char *argv[])
 {
 	int forked;
-	int queue_id = msgget(42, 0666 | IPC_CREAT); // Creation de msg queue
-	TmsgbufServ srv_msg;					 // Creation de msg queue
-	TmsgbufPilot pilot_msg;					 // Creation de msg queue
-	TmsgbufAdr adr_msg;
-
-
 	// Sema for tansmit the type
 	key_t sem_type_key = ftok(PATH, TYPE);
 	int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
@@ -35,12 +29,7 @@ int main (int argc, char *argv[])
 	}
 
 	//Afficheur (Parent)//
-	else if (process_id > 0) {
-		fflush(stdout);
-		msgrcv(queue_id, &adr_msg, sizeof(struct TmsgbufAdr), ADR, 0);
-		show_success("Monitor", "Server connected");
-		showMainMenu(queue_id, adr_msg);
-	}
+	else if (process_id > 0) showMainMenu();
 	/*Tampon Serveur (Child)*/
 	else{
 		// DAEMON CODE START //
@@ -72,12 +61,10 @@ int main (int argc, char *argv[])
 			exit(19);
 		}
 		//Pilots (Child)//
-		else if (process_id == 0) {
-			forkPilots(queue_id, pilot_msg); // Pilot forking function
-		}
+		else if (process_id == 0) forkPilots(); // Pilot forking function
 		//Server (Parent)
 		else{
-			server(queue_id, adr_msg); // Main server function
+			server(); // Main server function
 			int stat = SIGTERM;
 			wait(&stat); // Wait for any process returning SIGTERM
 		}

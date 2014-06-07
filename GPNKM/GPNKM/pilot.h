@@ -11,7 +11,7 @@ void exitPitstop(int numPit, int sem_pitstop);
 int chooseTires(int weather);
 unsigned int sectorSleep(double time, double factor);
 int getPitstop(int number);
-int forkPilots(int queue_id, TmsgbufPilot pilot_msg);
+int forkPilots();
 double tireWear(double tirestatus, int weather);
 double fuelConsumption(int fuelStock);
 double fuelStart();
@@ -24,7 +24,7 @@ double repairTime();
 void sendReady(TCar *tabCar, int sem_race, int numCell, TCar *pilot);
 void sendOver(TCar *tabCar, int sem_race, int numCell, TCar *pilot);
 void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pilot, int sem_start, int weatherFactor);
-void pilot(int number, int queue_id, TmsgbufPilot pilot_msg, int numCell, pid_t pid);
+void pilot(int numCell, pid_t pid);
 
 
 #endif

@@ -1,11 +1,9 @@
 #include "afficheur.h"
 
-void scoreMonitor(int queue_id, TmsgbufAdr adr_msg, int type){
+void scoreMonitor(int sem_control, int type){
 	// INIT SECTION
 	key_t sem_type_key = ftok(PATH, TYPE);
 	int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
-	key_t sem_control_key = ftok(PATH, CONTROL);
-	int sem_control = semget(sem_control_key, 1, IPC_CREAT | PERMS);
 	key_t sem_DispSrv_key = ftok(PATH, STOCK);
 	int sem_DispSrv = semget(sem_DispSrv_key, 2, IPC_CREAT | PERMS);
 	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
@@ -29,7 +27,8 @@ void scoreMonitor(int queue_id, TmsgbufAdr adr_msg, int type){
 					else printf("[Driver %d] ", localStock.tabResult[i].num);
 					printf("lap: %d | time: %.2lf sec | ",
 							localStock.tabResult[i].lnum, localStock.tabResult[i].timeLastLap);
-					printf("Retired : %s\n", localStock.tabResult[i].retired ? "yes" : "no");
+					printf("Retired : %s", localStock.tabResult[i].retired ? "yes" : "no");
+					printf(" | Pitstop : %s\n", localStock.tabResult[i].pitstop ? "yes" : "no");
 				}
 			    sleep(1);
 			}
@@ -39,7 +38,7 @@ void scoreMonitor(int queue_id, TmsgbufAdr adr_msg, int type){
 	semReset(sem_type, 0);
 }
 
-void showTRMenu(int queue_id, TmsgbufAdr adr_msg, int sem_type)
+void showTRMenu(int sem_control, int sem_type)
 {
 	fflush(stdin);
 	system ( "clear" );
@@ -57,24 +56,24 @@ void showTRMenu(int queue_id, TmsgbufAdr adr_msg, int sem_type)
 	{
 		case '1' : show_notice("Monitor", "Trial 1 is going to begin");
 				   sendSig(SIGTR1, sem_type, 0);
-				   scoreMonitor(queue_id, adr_msg, SIGTR1);
+				   scoreMonitor(sem_control, SIGTR1);
 				   break;
 		case '2' : show_notice("Monitor", "Trial 2 is going to begin");
 				   sendSig(SIGTR2, sem_type, 0);
-				   scoreMonitor(queue_id, adr_msg, SIGTR2);
+				   scoreMonitor(sem_control, SIGTR2);
 				   break;
 		case '3' : show_notice("Monitor", "Trial 3 is going to begin");
 				   sendSig(SIGTR3, sem_type, 0);
-				   scoreMonitor(queue_id, adr_msg, SIGTR3);
+				   scoreMonitor(sem_control, SIGTR3);
 				   break;
 		case '4' : printf("Show Results\n"); break;
-		case '0' : showMainMenu(queue_id, adr_msg); break;
-		default  : showTRMenu(queue_id, adr_msg, sem_type); break;
+		case '0' : showMainMenu(); break;
+		default  : showTRMenu(sem_control, sem_type); break;
 	}
 	fflush(stdin);
 }
 
-void showQualifMenu(int queue_id, TmsgbufAdr adr_msg,  int sem_type)
+void showQualifMenu(int sem_control,  int sem_type)
 {
 	fflush(stdin);
 	system ( "clear" );
@@ -92,33 +91,30 @@ void showQualifMenu(int queue_id, TmsgbufAdr adr_msg,  int sem_type)
 	{
 		case '1' : show_notice("Monitor", "Qualification 1 is going to begin");
 				   sendSig(SIGQU1, sem_type, 0);
-				   scoreMonitor(queue_id, adr_msg, SIGQU1);
+				   scoreMonitor(sem_control, SIGQU1);
 				   break;
 		case '2' : show_notice("Monitor", "Qualification 1 is going to begin");
 				   sendSig(SIGQU2, sem_type, 0);
-				   scoreMonitor(queue_id, adr_msg, SIGQU2);
+				   scoreMonitor(sem_control, SIGQU2);
 				   break;;
 		case '3' : show_notice("Monitor", "Qualification 1 is going to begin");
 				   sendSig(SIGQU3, sem_type, 0);
-				   scoreMonitor(queue_id, adr_msg, SIGQU3);
+				   scoreMonitor(sem_control, SIGQU3);
 				   break;
 		case '4' : printf("Show Results of Qualifiers\n"); break;
-		case '0' : showMainMenu(queue_id, adr_msg); break;
-		default  : showQualifMenu(queue_id, adr_msg, sem_type); break;
+		case '0' : showMainMenu(); break;
+		default  : showQualifMenu(sem_control, sem_type); break;
 	}   
 	fflush(stdin);
 }
 
-void endOfProgram(int queue_id, TmsgbufAdr adr_msg,  int sem_type)
+void endOfProgram(int sem_control, int sem_type)
 {
-	key_t sem_control_key = ftok(PATH, CONTROL);
-	int sem_control = semget(sem_control_key, 1, IPC_CREAT | PERMS);
 	key_t sem_DispSrv_key = ftok(PATH, STOCK);
 	int sem_DispSrv = semget(sem_DispSrv_key, 2, IPC_CREAT | PERMS);
 	sendSig(SIGEXIT, sem_control, 0);
 
 	semctl(sem_type, 0, IPC_RMID, NULL);
-	msgctl(queue_id, IPC_RMID, NULL); // DELETION OF MESSAGE QUEUE //
 	semctl(sem_DispSrv, DISP_READ, IPC_RMID, NULL);
 	semctl(sem_DispSrv, SRV_WRITE, IPC_RMID, NULL);
 	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
@@ -129,24 +125,32 @@ void endOfProgram(int queue_id, TmsgbufAdr adr_msg,  int sem_type)
 	exit(EXIT_SUCCESS);
 }
 
-void weather(int number){
+void weatherMsg(int number){
 	switch( number ) {
-    	case 1: printf("It's a rainy day at the normally dry GPNKM track, drivers should prepare for a tough weekend!\n"); break;
-    	case 2: printf("The weather has been off and on, drivers need to be ready for a wet circuit!\n"); break;
-    	case 3: printf("It's a beautiful day at the GPNKM circuit, it is time to DRIVE!\n"); break;
+    	case SIGRAIN: printf("It's a rainy day at the normally dry GPNKM track, drivers should prepare for a tough weekend!\n"); break;
+    	case SIGWET: printf("The weather has been off and on, drivers need to be ready for a wet circuit!\n"); break;
+    	case SIGDRY: printf("It's a beautiful day at the GPNKM circuit, it is time to DRIVE!\n"); break;
 	}
 	return;
 }
 
-void showMainMenu(int queue_id, TmsgbufAdr adr_msg)
+void showMainMenu()
 {
 	key_t sem_type_key = ftok(PATH, TYPE);
 	int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
+	
+	key_t sem_control_key = ftok(PATH, CONTROL);
+	int sem_control = semget(sem_control_key, 1, IPC_CREAT | PERMS);
+	int weather = 1;
+	
+	while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 0);	
+	show_success("Monitor", "Server connected");
+	
 	fflush(stdin);
 	system ( "clear" );
 	printf("\033[36m");
 	printf ("Welcome to the worldest famous GPNKM!\n");
-	weather(adr_msg.weather);
+	weatherMsg(weather);
 	printf ("-------------------------------------\n\n");
 	printf ("1 : Begin Test Runs\n");
 	printf ("2 : Begin Qualifiers\n");
@@ -158,16 +162,16 @@ void showMainMenu(int queue_id, TmsgbufAdr adr_msg)
  	printf("\033[0m");
 	switch(getchar())
 	{
-		case '1' : showTRMenu(queue_id, adr_msg, sem_type); break;
-		case '2' : showQualifMenu(queue_id, adr_msg, sem_type); break;
+		case '1' : showTRMenu(sem_control, sem_type); break;
+		case '2' : showQualifMenu(sem_control, sem_type); break;
 		case '3' : show_notice("Monitor", "Grand Prix is going to begin");
 				   sendSig(SIGGP, sem_type, 0);
-				   scoreMonitor(queue_id, adr_msg, SIGGP);
+				   scoreMonitor(sem_control, SIGGP);
 				   break;
 		case '4' : printf("Show Results\n"); break;
 		case '5' : printf("Restart Grand Prix\n"); break;
-		case '0' : endOfProgram(queue_id, adr_msg, sem_type);
-		default  : showMainMenu(queue_id, adr_msg); break;
+		case '0' : endOfProgram(sem_control, sem_type);
+		default  : showMainMenu(); break;
 	}
     fflush(stdin);
 }

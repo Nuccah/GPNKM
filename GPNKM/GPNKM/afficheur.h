@@ -2,7 +2,7 @@
 #define H_AFFICHEUR
 #include "structures.h"
 
-void showMainMenu(int queue_id, TmsgbufAdr adr_msg);
+void showMainMenu();
 
 
 #endif

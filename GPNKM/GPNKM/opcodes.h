@@ -12,6 +12,11 @@
 // Start the race
 #define SIGSTART 4
 
+// Weather sig
+#define SIGDRY 5
+#define SIGWET 6
+#define SIGRAIN 7
+
 // Trial sig
 #define SIGTR1 10
 #define SIGTR2 11
