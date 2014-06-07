@@ -11,7 +11,7 @@ void exitPitstop(int numPit, int sem_pitstop);
 int chooseTires(int weather);
 unsigned int sectorSleep(double time, double factor);
 int getPitstop(int number);
-int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg);
+int forkPilots(int queue_id, TmsgbufPilot pilot_msg);
 double tireWear(double tirestatus, int weather);
 double fuelConsumption(int fuelStock);
 double fuelStart();

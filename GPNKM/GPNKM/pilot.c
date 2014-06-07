@@ -1,8 +1,9 @@
 #include "pilot.h"
 
-int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_msg){
+int forkPilots(int queue_id, TmsgbufPilot pilot_msg){
 	int i;
 	pid_t pid;
+	int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
 	/*SEMA PITSTOP INIT*/
 	key_t sem_pitstop_key = ftok(PATH, PIT); // Sema Key generated
 	int sem_pitstop = semget(sem_pitstop_key, 11, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
@@ -19,10 +20,7 @@ int forkPilots(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufPilot pilot_ms
 			int number;
 			int pidNum = getpid();
 			srand((pidNum*10)+time(NULL));
-          	read(pfdSrvDrv, &number, sizeof(int)); // First come first serve for driver numbers in pipe
-          	write(pfdDrvSrv, &pidNum, sizeof(int)); // Write in pipe pilots PID for later kill
-          	close(pfdSrvDrv);close(pfdDrvSrv); // Close remaining pipe FD's because no longer used
-          	pilot(number, queue_id, pilot_msg, i, pidNum);
+          	pilot(drivers[i], queue_id, pilot_msg, i, pidNum);
        	}
     }
 	int status = 0;
@@ -82,6 +80,7 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 				if((i == 2) && (tiresWorn(tireStatus) || isDamaged)){
 					if(enterPitstop(numPit, sem_pitstop))
 					{
+						// PITSTOP
 						pitstopsleep = pitTime();
 						if(tiresWorn(tireStatus))
 						{
@@ -104,16 +103,19 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 						pilot->lapTimes[lap].tabSect[i].stime += pitstopsleep;
 						exitPitstop(numPit, sem_pitstop);
 						pilot->pitstop = false;
+						// PITSTOP END
 					}
 				}
 			}
 		}
 		semDown(sem_race, numCell);
-		memcpy(&tabCar[numCell], pilot, sizeof(TCar));
+		memcpy(&tabCar[numCell], pilot, sizeof(TCar)); // Put cell content into the shared memory
 		semUp(sem_race, numCell);
-		semUp(sem_modif, numCell);
-		if(pilot->retired)
-			finished = true;
+		
+		semUp(sem_modif, numCell); // Send to server signal of data change
+		
+		if(pilot->retired) finished = true;
+		
 		if(i==2)
 		{
 			if (checkSig(SIGEND, sem_control, 0)) finished = true;

@@ -16,7 +16,7 @@ int randomWeather(int queue_id, pid_t *tabD){
 	return number;
 }
 
-void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
+void server(int queue_id, TmsgbufAdr adr_msg){
     // INIT SECTION
     key_t sem_type_key = ftok(PATH, TYPE);
     int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
@@ -43,16 +43,6 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
     // END INIT SECTION
     int i;
 	char* msg;
-	int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
-	int size = (sizeof(drivers) / sizeof(int))+1;
-	//printf("Weather: %s \n", weather);
-	for(i=1;i<size;i++){ // Write in pipe all available numbers
-		write(pfdSrvDrv, &drivers[i-1], sizeof(int));
-	}
-	for(i=1;i<size;i++){ // Read in pipe the PID of each drivers and stock in table
-		read(pfdDrvSrv, &adr_msg.tabD[i-1], sizeof(pid_t));
-	}
-	close(pfdSrvDrv);close(pfdDrvSrv); // Close remaining pipe FD's because no longer used
 	adr_msg.mtype = ADR;
 	adr_msg.tabD[22] = getpid();	
 	adr_msg.weather = randomWeather(queue_id, adr_msg.tabD); // Weather Selection, Write on MQ for everyone the weather
@@ -61,6 +51,7 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 	show_success("Server", "Initialisation complete");
 
 	do{
+		semReset(sem_control, 0);
 		// Wait race type from Monitor
 		int type = 0;
 		while(!((type >= SIGTR1) && (type <= SIGGP))) type = getSig(sem_type, 0);
@@ -132,7 +123,7 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 						    // write into the shared mem for monitor
 						    while(!isShMemReadable(sem_DispSrv, DISP_READ));
 							semDown(sem_DispSrv, SRV_WRITE);
-							memcpy(listStock, &localStock, sizeof(TSharedStock));
+							memcpy(listStock, &localStock, sizeof(TSharedStock)); // Put stock content into shared memory
 							semUp(sem_DispSrv, SRV_WRITE);
 						}
 						else k--;
@@ -147,7 +138,7 @@ void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg){
 
 	    next:
 	    	show_success("Server", "Race terminated!");
-	    	semReset(sem_control, 0);
+	    	sendSig(SIGEND, sem_control, 0);
 	    	semReset(sem_type, 0);
 	}while(!checkSig(SIGEXIT, sem_control, 0));
 	shmdt(&shm_race);

@@ -26,7 +26,7 @@
 #define SIGGP 16
 
 // Project number for sem/shm key generation + Path
-#define PATH "/usr/bin/passwd"
+#define PATH "/dev/null"
 #define CONTROL 10
 #define TYPE 11
 #define RACE 12

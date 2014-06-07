@@ -66,7 +66,6 @@ int main (int argc, char *argv[])
 		//***********//
 		//*PIPE INIT*//
 		//***********//
-		int pfdSrvDrv[2]; int pfdDrvSrv[2];	pipe(pfdSrvDrv); pipe(pfdDrvSrv);	// Creation des pipes entre Serveur et les Pilotes
 		process_id = fork(); // Deuxieme Fork (Server, Pilot)
 		if (process_id < 0) {
 			perror("Error while attempting Fork (Server/Pilot)");
@@ -74,13 +73,11 @@ int main (int argc, char *argv[])
 		}
 		//Pilots (Child)//
 		else if (process_id == 0) {
-			close(pfdSrvDrv[1]);close(pfdDrvSrv[0]); // Close unused write/read ends of respective pipes
-			forkPilots(queue_id, pfdSrvDrv[0], pfdDrvSrv[1], pilot_msg); // Pilot forking function
+			forkPilots(queue_id, pilot_msg); // Pilot forking function
 		}
 		//Server (Parent)
 		else{
-			close(pfdSrvDrv[0]);close(pfdDrvSrv[1]); // Close unused write/read ends of respective pipes
-			server(queue_id, pfdSrvDrv[1], pfdDrvSrv[0], adr_msg); // Main server function
+			server(queue_id, adr_msg); // Main server function
 			int stat = SIGTERM;
 			wait(&stat); // Wait for any process returning SIGTERM
 		}

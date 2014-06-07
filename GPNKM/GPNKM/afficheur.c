@@ -25,7 +25,9 @@ void scoreMonitor(int queue_id, TmsgbufAdr adr_msg, int type){
 				int i;
 				system("clear");
 				for(i = 0; i < 22; i++){
-					printf("[Driver %d] lap: %d | time: %.2lf sec | ", localStock.tabResult[i].num, 
+					if(localStock.tabResult[i].num < 10) printf("[Driver 0%d] ", localStock.tabResult[i].num); 
+					else printf("[Driver %d] ", localStock.tabResult[i].num);
+					printf("lap: %d | time: %.2lf sec | ",
 							localStock.tabResult[i].lnum, localStock.tabResult[i].timeLastLap);
 					printf("Retired : %s\n", localStock.tabResult[i].retired ? "yes" : "no");
 				}
@@ -39,8 +41,8 @@ void scoreMonitor(int queue_id, TmsgbufAdr adr_msg, int type){
 
 void showTRMenu(int queue_id, TmsgbufAdr adr_msg, int sem_type)
 {
-	fflush(stdout);
-//	system ( "clear" );
+	fflush(stdin);
+	system ( "clear" );
 	printf("\033[36m");
 	printf ("Trial Runs!\n");
 	printf ("-------------------------------------\n\n");
@@ -74,7 +76,7 @@ void showTRMenu(int queue_id, TmsgbufAdr adr_msg, int sem_type)
 
 void showQualifMenu(int queue_id, TmsgbufAdr adr_msg,  int sem_type)
 {
-	fflush(stdout);
+	fflush(stdin);
 	system ( "clear" );
 	printf("\033[36m");
 	printf ("Welcome to the worldest famous GPNKM!\n");
@@ -140,7 +142,7 @@ void showMainMenu(int queue_id, TmsgbufAdr adr_msg)
 {
 	key_t sem_type_key = ftok(PATH, TYPE);
 	int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
-	fflush(stdout);
+	fflush(stdin);
 	system ( "clear" );
 	printf("\033[36m");
 	printf ("Welcome to the worldest famous GPNKM!\n");

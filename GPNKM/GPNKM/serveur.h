@@ -11,7 +11,7 @@ bool isTabCarReadable(int sem_id);
 void endRace(int sig);
 
 // Main server function
-void server(int queue_id, int pfdSrvDrv, int pfdDrvSrv, TmsgbufAdr adr_msg);
+void server(int queue_id, TmsgbufAdr adr_msg);
 
 
 
