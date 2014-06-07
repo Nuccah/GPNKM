@@ -51,7 +51,11 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 	double tireStatus = 100.0;
 	while(!finished)
 	{
-		if(pilot->pitstop == true) pilot->pitstop = false;
+		if(pilot->pitstop == true) 
+		{
+			pilot->pitstop = false;
+			exitPitstop(numPit, sem_pitstop);
+		}
 		if(i == 3)
 		{
 			i = 0;
@@ -95,7 +99,6 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 						pilot->pitstop = true;
 						usleep(sectorSleep(pitstopsleep, 0.1));
 						pilot->lapTimes[lap].tabSect[i].stime += pitstopsleep;
-						exitPitstop(numPit, sem_pitstop);
 						// PITSTOP END
 					}
 				}
