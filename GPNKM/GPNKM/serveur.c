@@ -38,11 +38,13 @@ void server(){
 	int shm_race = shmget(shm_race_key, 22*sizeof(TCar), S_IRUSR);
 	TCar *tabCar = (TCar *) shmat(shm_race, NULL, 0);
     
-    int i;
+    int i; int j;
 	TCar tabRead[22];
 	show_success("Server", "Initialisation complete");
 	// END INIT SECTION
 	do{
+		
+
 	    // Send weather to monitor and pilots
 		sendSig(randomWeather(), sem_control, 1);
 		// Wait race type from Monitor
@@ -51,7 +53,8 @@ void server(){
 		printf("Server received: %d\n", type);
 		TSharedStock localStock;
 		localStock.bestDriver.time = 0;
-
+		memset(&localStock, 0, sizeof(TSharedStock));
+		memset(listStock, 0, sizeof(TSharedStock));
 		// Wait for drivers ready
 		for(i = 0; i < 22; i++){
 			while(!isShMemReadable(sem_race, i));
@@ -76,7 +79,7 @@ void server(){
 		switch(type){
 			case SIGTR1: alarm(54);
 					break;
-			case SIGTR2: alarm(54);
+		case SIGTR2: alarm(54);
 					break;
 			case SIGTR3: alarm(36);
 					break;
@@ -90,50 +93,56 @@ void server(){
 		semReset(sem_type, 0);
 		bool finished = false;
 		int currentLap = 0;
+		int tmpLap = 0, tmpSec = 0, k;
+		sleep(2);
 		do {
 			if((type != SIGGP) && checkSig(SIGEND, sem_control, 0)) finished = true;
-			else if((type == SIGGP) && (currentLap >= LAPGP)) goto end;
+			if((type == SIGGP) && (currentLap >= LAPGP)) goto end;
 			else{
-				int k;
-				for(k = 0; k < 22; k++){
-					if(isShMemReadable(sem_modif, k))
-					{
-						semDown(sem_modif, k);
-						if(isShMemReadable(sem_race, k))
+					for(k = 0; k < 22; k++){
+						if(isShMemReadable(sem_modif, k))
 						{
+							semDown(sem_modif, k);
+							if(isShMemReadable(sem_race, k))
+							{
 								// Read in shared table
-							memcpy(&tabRead[k], &tabCar[k], sizeof(TCar));
-							localStock.tabResult[k].lnum = tabRead[k].lnum;
-							localStock.tabResult[k].snum = tabRead[k].snum;
-
-							// Calculate lap time only when the turn is over
-							if(localStock.tabResult[k].snum == 2)
-							{
-								localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
-								localStock.tabResult[k].timeGlobal += localStock.tabResult[k].timeLastLap;
+								tmpLap = localStock.tabResult[k].lnum;
+								tmpSec = localStock.tabResult[k].snum;
+								memcpy(&tabRead[k], &tabCar[k], sizeof(TCar));
+								localStock.tabResult[k].lnum = tabRead[k].lnum;
+								localStock.tabResult[k].snum = tabRead[k].snum;
+								for(i=tmpLap; i<=tabRead[k].lnum; i++)
+								{
+									for(j=tmpSec; j<=tabRead[k].lapTimes[i].tabSect[j].stime; j++)
+									{
+										if(localStock.tabResult[k].snum == 2)
+										{
+											localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
+										}
+										localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
+									}
+								}
+								// Calculate lap time only when the turn is over
+								localStock.tabResult[k].retired = tabRead[k].retired;
+								localStock.tabResult[k].pitstop = tabRead[k].pitstop;
+								if(localStock.bestDriver.time > localStock.tabResult[k].timeLastLap) // if best lap time is bigger than timeLastLap 
+								{
+									localStock.bestDriver.time = localStock.tabResult[k].timeLastLap;
+									localStock.bestDriver.teamName = localStock.tabResult[k].teamName;
+									localStock.bestDriver.num = localStock.tabResult[k].num;
+								}
+								semReset(sem_modifa,0);
+								 // write into the shared mem for monitor
+							    qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpfunct);
+								 
+							    while(!isShMemReadable(sem_DispSrv, DISP_READ));
+								semDown(sem_DispSrv, SRV_WRITE);
+								memcpy(listStock, &localStock, sizeof(TSharedStock)); // Put stock content into shared memory
+								semUp(sem_DispSrv, SRV_WRITE);
 							}
-							localStock.tabResult[k].retired = tabRead[k].retired;
-							localStock.tabResult[k].pitstop = tabRead[k].pitstop;
-							if(localStock.bestDriver.time > localStock.tabResult[k].timeLastLap) // if best lap time is bigger than timeLastLap 
-							{
-								localStock.bestDriver.time = localStock.tabResult[k].timeLastLap;
-								localStock.bestDriver.teamName = localStock.tabResult[k].teamName;
-								localStock.bestDriver.num = localStock.tabResult[k].num;
-							}
-							semReset(sem_modifa,0);
+							else k--;
 						}
-						else k--;
 					}
-
-				}
-			    // write into the shared mem for monitor
-			    qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpfunct);
-				 
-			    while(!isShMemReadable(sem_DispSrv, DISP_READ));
-				semDown(sem_DispSrv, SRV_WRITE);
-				memcpy(listStock, &localStock, sizeof(TSharedStock)); // Put stock content into shared memory
-				semUp(sem_DispSrv, SRV_WRITE);
-				
 				if(type == SIGGP) currentLap++;
 			}	    
 		} while(!finished);
