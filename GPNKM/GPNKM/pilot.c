@@ -23,6 +23,7 @@ int forkPilots(){
     }
 	int status = 0;
 	waitpid(pid, &status, 0);
+	for(i=0; i<11; i++)	semctl(sem_pitstop, i, IPC_RMID, NULL);
 	exit(EXIT_SUCCESS);
 }
 
@@ -31,6 +32,9 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 	// INIT SECTION
 	key_t sem_pitstop_key = ftok(PATH, PIT);
 	int sem_pitstop = semget(sem_pitstop_key, 11, IPC_CREAT | PERMS);
+	
+	key_t sem_srv_key = ftok(PATH, SRV);
+    int sem_srv = semget(sem_srv_key, 22, IPC_CREAT | PERMS);
 
 	int numPit = getPitstop(pilot->num);
 	// END INIT SECTION
@@ -104,6 +108,7 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 				}
 			}
 		}
+		while(!isShMemReadable(sem_srv, numCell));
 		semDown(sem_race, numCell);
 		memcpy(&tabCar[numCell], pilot, sizeof(TCar)); // Put cell content into the shared memory
 		semUp(sem_race, numCell);
@@ -120,6 +125,11 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 		i++;
 	}
 	sendOver(tabCar, sem_race, numCell, pilot);
+	semReset(sem_race, numCell);
+	semReset(sem_modif, numCell);
+	semDown(sem_modif, numCell);
+	semctl(sem_pitstop, numPit, IPC_RMID, NULL);
+	semctl(sem_srv, numCell, IPC_RMID, NULL);
 }
 
 void pilot(int numCell, pid_t pid){	
@@ -128,7 +138,7 @@ void pilot(int numCell, pid_t pid){
 	int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
 
 	key_t sem_control_key = ftok(PATH, CONTROL);
-	int sem_control = semget(sem_control_key, 1, IPC_CREAT | PERMS);
+	int sem_control = semget(sem_control_key, 2, IPC_CREAT | PERMS);
 
 	key_t sem_race_key = ftok(PATH, RACE);
 	int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS);
@@ -155,11 +165,19 @@ void pilot(int numCell, pid_t pid){
 		while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 1);
 		pilot.tires = chooseTires(weather);
 		int race = 0;
-		while(!((race >= SIGTR1) && (race <= SIGGP))) race = getSig(sem_type, 0);
+		while((!((race >= SIGTR1) && (race <= SIGGP))) && (!checkSig(SIGEXIT, sem_control, 0))) race = getSig(sem_type, 0);
+		if(checkSig(SIGEXIT, sem_control, 0)) goto eop;
 		startRace(tabCar, sem_race, sem_modif, numCell, &pilot, sem_control, weather);
 	}while(!checkSig(SIGEXIT, sem_control, 0));
-	shmdt(&shm_race);
-
+	eop:
+		shmdt(&shm_race);
+		semctl(sem_type, 0, IPC_RMID, NULL);
+		semctl(sem_race, numCell, IPC_RMID, NULL);
+		semctl(sem_modif, numCell, IPC_RMID, NULL);
+		semctl(sem_control, 0, IPC_RMID, NULL);
+		semctl(sem_control, 1, IPC_RMID, NULL);
+		shmctl(shm_race, IPC_RMID, NULL);
+		exit(EXIT_SUCCESS);
 }
 
 bool crashed(){

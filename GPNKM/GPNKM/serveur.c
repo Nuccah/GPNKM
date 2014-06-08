@@ -11,11 +11,14 @@ int randomWeather(){
 
 void server(){
     // INIT SECTION
+    key_t sem_srv_key = ftok(PATH, SRV);
+    int sem_srv = semget(sem_srv_key, 22, IPC_CREAT | PERMS);
+    
     key_t sem_type_key = ftok(PATH, TYPE);
     int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
 
     key_t sem_control_key = ftok(PATH, CONTROL);
-    int sem_control = semget(sem_control_key, 1, IPC_CREAT | PERMS);
+    int sem_control = semget(sem_control_key, 2, IPC_CREAT | PERMS);
 
     key_t sem_race_key = ftok(PATH, RACE);
     int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS);
@@ -38,38 +41,42 @@ void server(){
 	int shm_race = shmget(shm_race_key, 22*sizeof(TCar), S_IRUSR);
 	TCar *tabCar = (TCar *) shmat(shm_race, NULL, 0);
     
-    int i; int j;
-	TCar tabRead[22];
 	show_success("Server", "Initialisation complete");
 	// END INIT SECTION
 	do{
-		
+		int i = 0, j = 0;
+		TCar tabRead[22];
 
 	    // Send weather to monitor and pilots
 		sendSig(randomWeather(), sem_control, 1);
 		// Wait race type from Monitor
 		int type = 0;
-		while(!((type >= SIGTR1) && (type <= SIGGP))) type = getSig(sem_type, 0);
+		while((!((type >= SIGTR1) && (type <= SIGGP))) && (!checkSig(SIGEXIT, sem_control, 0))) type = getSig(sem_type, 0);
+		if(checkSig(SIGEXIT, sem_control, 0)) goto eop;
 		printf("Server received: %d\n", type);
 		TSharedStock localStock;
 		localStock.bestDriver.time = 0;
-		memset(&localStock, 0, sizeof(TSharedStock));
+
 		memset(listStock, 0, sizeof(TSharedStock));
+		
 		// Wait for drivers ready
-		for(i = 0; i < 22; i++){
-			while(!isShMemReadable(sem_race, i));
+		for(i = 0; i < 22; i++){ 
+			while(!isShMemReadable(sem_race, i));				// Server fails here at second runs 
 			memcpy(&tabRead[i], &tabCar[i], sizeof(TCar));
 			localStock.tabResult[i].teamName = tabRead[i].teamName;
 			localStock.tabResult[i].num = tabRead[i].num;
 			localStock.tabResult[i].timeGlobal = 0;
 			localStock.tabResult[i].timeLastLap = 0;
+			localStock.tabResult[i].lnum = 0;
+			localStock.tabResult[i].snum = 0;
 			semDown(sem_modif, i);
 		}
+		printf("OK ca passe!\n");
 		semDown(sem_DispSrv, SRV_WRITE);
 		memcpy(listStock, &localStock, sizeof(TSharedStock)); // Put stock content into shared memory
 		semUp(sem_DispSrv, SRV_WRITE);
 		semReset(sem_modifa,0);
-		sleep(1);
+
 		// Init signal handler if race type based on time
 		if(type != SIGGP) signal(SIGALRM, endRace);
 		semReset(sem_control, 0);
@@ -79,7 +86,7 @@ void server(){
 		switch(type){
 			case SIGTR1: alarm(54);
 					break;
-		case SIGTR2: alarm(54);
+			case SIGTR2: alarm(54);
 					break;
 			case SIGTR3: alarm(36);
 					break;
@@ -94,7 +101,6 @@ void server(){
 		bool finished = false;
 		int currentLap = 0;
 		int tmpLap = 0, tmpSec = 0, k;
-		sleep(2);
 		do {
 			if((type != SIGGP) && checkSig(SIGEND, sem_control, 0)) finished = true;
 			if((type == SIGGP) && (currentLap >= LAPGP)) goto end;
@@ -108,12 +114,14 @@ void server(){
 								// Read in shared table
 								tmpLap = localStock.tabResult[k].lnum;
 								tmpSec = localStock.tabResult[k].snum;
+								semDown(sem_srv, k);
 								memcpy(&tabRead[k], &tabCar[k], sizeof(TCar));
+								semUp(sem_srv, k);
 								localStock.tabResult[k].lnum = tabRead[k].lnum;
 								localStock.tabResult[k].snum = tabRead[k].snum;
 								for(i=tmpLap; i<=tabRead[k].lnum; i++)
 								{
-									for(j=tmpSec; j<=tabRead[k].lapTimes[i].tabSect[j].stime; j++)
+									for(j=tmpSec; j<=tabRead[k].snum; j++)
 									{
 										if(localStock.tabResult[k].snum == 2)
 										{
@@ -131,7 +139,6 @@ void server(){
 									localStock.bestDriver.teamName = localStock.tabResult[k].teamName;
 									localStock.bestDriver.num = localStock.tabResult[k].num;
 								}
-								semReset(sem_modifa,0);
 								 // write into the shared mem for monitor
 							    qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpfunct);
 								 
@@ -139,6 +146,7 @@ void server(){
 								semDown(sem_DispSrv, SRV_WRITE);
 								memcpy(listStock, &localStock, sizeof(TSharedStock)); // Put stock content into shared memory
 								semUp(sem_DispSrv, SRV_WRITE);
+								semReset(sem_modifa,0);
 							}
 							else k--;
 						}
@@ -153,9 +161,13 @@ void server(){
 	    	show_success("Server", "Race terminated!");
 	    	sendSig(SIGEND, sem_control, 0);
 	    	semReset(sem_type, 0);
+	    	int s;
+	    	for(s=0;s<22;s++) semReset(sem_race, s);
 	}while(!checkSig(SIGEXIT, sem_control, 0));
-	shmdt(&shm_race);
-	shmdt(&shm_DispSrv);
+	eop:
+		shmdt(&shm_race);
+		shmdt(&shm_DispSrv);
+		return;
 }
 
 // Sector table as parameter

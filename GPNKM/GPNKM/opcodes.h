@@ -39,6 +39,7 @@
 #define PIT 14
 #define MODIF 15
 #define MODIFA 25
+#define SRV 26
 
 #define RACESHM 22
 #define STOCKSHM 23

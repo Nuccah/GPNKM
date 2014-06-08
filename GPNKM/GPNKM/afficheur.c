@@ -31,7 +31,7 @@ void scoreMonitor(int sem_control, int type){
 						else printf("[%d] | ", i+1);
 						if(localStock.tabResult[i].num < 10) printf("[Driver 0%d] ", localStock.tabResult[i].num); 
 						else printf("[Driver %d] ", localStock.tabResult[i].num);
-						printf("lap: %d | time: %.2lf sec | ",
+						printf("lap: %2d | time: %6.2lf sec | ",
 								localStock.tabResult[i].lnum, localStock.tabResult[i].timeGlobal);
 						printf("Retired : %s", localStock.tabResult[i].retired ? "yes" : "no");
 						printf(" | Pitstop : %s\n", localStock.tabResult[i].pitstop ? "yes" : "no");
@@ -45,6 +45,7 @@ void scoreMonitor(int sem_control, int type){
 	fflush(stdin);
 	printf("Press 0 to return to main menu...\n");
 	while(getchar() != '0') fflush(stdin);
+	semctl(sem_modifa, 0, IPC_RMID, NULL);
 	showMainMenu();
 }
 
@@ -132,7 +133,6 @@ void endOfProgram(int sem_control, int sem_type)
 	shmctl(shm_DispSrv, IPC_RMID, NULL);
 	show_success("Monitor", "All processes closed successfully\nProgram will now exit");
 	semctl(sem_control, 0, IPC_RMID, NULL);
-	exit(EXIT_SUCCESS);
 }
 
 void weatherMsg(int number){
@@ -179,7 +179,7 @@ void showMainMenu()
 				   break;
 		case '4' : printf("Show Results\n"); break;
 		case '5' : printf("Restart Grand Prix\n"); break;
-		case '0' : endOfProgram(sem_control, sem_type);
+		case '0' : endOfProgram(sem_control, sem_type); break;
 		default  : showMainMenu(); break;
 	}
     fflush(stdin);

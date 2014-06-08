@@ -2,7 +2,6 @@
 
 int main (int argc, char *argv[])
 {
-	int forked;
 	// Sema for tansmit the type
 	key_t sem_type_key = ftok(PATH, TYPE);
 	int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
@@ -46,12 +45,17 @@ int main (int argc, char *argv[])
 		// Sema for control shared mem race
 		key_t sem_race_key = ftok(PATH, RACE); // Sema Key generated
 		key_t sem_modif_key = ftok(PATH, MODIF); // Sema Key generated
+		key_t sem_srv_key = ftok(PATH, SRV);
+        int sem_srv = semget(sem_srv_key, 22, IPC_CREAT | PERMS);
 		int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
 		int sem_modif = semget(sem_modif_key, 22, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
 		int i;
-		for(i = 0; i < 22; i++)	semReset(sem_race, i);
-		for(i = 0; i < 22; i++)	semReset(sem_modif, i);
-		for(i = 0; i < 22; i++)	semDown(sem_modif, i);					
+		for(i = 0; i < 22; i++){
+			semReset(sem_race, i);
+			semReset(sem_modif, i);
+			semDown(sem_modif, i);	
+			semReset(sem_srv, i);
+		}				
 		//*****************//
 		//*SHARED MEM INIT*//
 		//*****************//
@@ -69,20 +73,21 @@ int main (int argc, char *argv[])
 		//Pilots (Child)//
 		else if (process_id == 0) forkPilots(); // Pilot forking function
 		//Server (Parent)
-		else{
-			server(); // Main server function
-			int stat = SIGTERM;
-			wait(&stat); // Wait for any process returning SIGTERM
+		else server(); // Main server function
+
+		for(i = 0; i < 22; i++){
+			semctl(sem_race, i, IPC_RMID, NULL);
+			semctl(sem_srv, i, IPC_RMID, NULL);
+			semctl(sem_modif, i, IPC_RMID, NULL);
 		}
-		semctl(sem_race, 0, IPC_RMID, NULL);
 		semctl(sem_type, 0, IPC_RMID, NULL);
 		semctl(sem_control, 0, IPC_RMID, NULL);
-		shmdt(&shm_race);
+		semctl(sem_control, 1, IPC_RMID, NULL);
+		semctl(sem_modifa, 0, IPC_RMID, NULL);
 		shmctl(shm_race, IPC_RMID, NULL);
+		shmctl(shm_DispSrv, IPC_RMID, NULL);
 	}
-
-//	tester();
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 void daemonize(){
@@ -105,31 +110,6 @@ void daemonize(){
 	close(STDOUT_FILENO);
 	close(STDERR_FILENO);
 }
-
-
-
-/*
-void tester(){
-	int Drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10};
-	srand ( time(NULL) );
-	int randDriver = rand() % 22;
-	const char *weather = randomWeather();
-	double speed = speedWeather(weather);
-	const char *team = getTeamName(Drivers[randDriver]);
-	double time1 = sectorTime(speed, S1);
-	double time2 = sectorTime(speed, S2);
-	double time3 = sectorTime(speed, S3);
-	double lap1 = lapTime(time1, time2, time3);
-	printf ("Welcome to the worldest famous GPNKM!\n");
-	printf("Weather: %s \n", weather);
-	printf("Weather Modified Speed: %.2lf \n", speed);
-	printf("Name: %s \n", team);
-	printf("Sector 1 Time: %.2lf \n", time1);
-	printf("Sector 2 Time: %.2lf \n", time2);
-	printf("Sector 3 Time: %.2lf \n", time3);
-	printf("Laptime: %.2lf \n", lap1);
-}*/
-
 
 
 
