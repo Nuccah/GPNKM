@@ -25,10 +25,12 @@ void scoreMonitor(int sem_control, int type){
 					memcpy(&localStock, listStock, sizeof(TSharedStock));
 					semUp(sem_DispSrv, DISP_READ);
 					int i;
-				//	system("clear");
+					system("clear");
 					for(i = 0; i < 22; i++){
-						if(localStock.tabResult[i].num < 10) printf("[%d] | [Driver 0%d] ", i+1, localStock.tabResult[i].num); 
-						else printf("[%d] | [Driver %d] ", i+1, localStock.tabResult[i].num);
+						if((i+1) < 10) printf("[0%d] | ", i+1);
+						else printf("[%d] | ", i+1);
+						if(localStock.tabResult[i].num < 10) printf("[Driver 0%d] ", localStock.tabResult[i].num); 
+						else printf("[Driver %d] ", localStock.tabResult[i].num);
 						printf("lap: %d | time: %.2lf sec | ",
 								localStock.tabResult[i].lnum, localStock.tabResult[i].timeGlobal);
 						printf("Retired : %s", localStock.tabResult[i].retired ? "yes" : "no");
@@ -40,6 +42,10 @@ void scoreMonitor(int sem_control, int type){
 	}while(!finished);
 	shmdt(&shm_DispSrv);
 	semReset(sem_type, 0);
+	fflush(stdin);
+	printf("Press 0 to return to main menu...\n");
+	while(getchar() != '0') fflush(stdin);
+	showMainMenu();
 }
 
 void showTRMenu(int sem_control, int sem_type)
@@ -147,8 +153,7 @@ void showMainMenu()
 	int sem_control = semget(sem_control_key, 1, IPC_CREAT | PERMS);
 	int weather = 1;
 	
-	while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 0);	
-	show_success("Monitor", "Server connected");
+	while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 1);	
 	
 	fflush(stdin);
 	system ( "clear" );

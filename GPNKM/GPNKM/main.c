@@ -9,8 +9,9 @@ int main (int argc, char *argv[])
 	semReset(sem_type, 0);
 
 	key_t sem_control_key = ftok(PATH, CONTROL);
-	int sem_control = semget(sem_control_key, 1, IPC_CREAT | PERMS);
+	int sem_control = semget(sem_control_key, 2, IPC_CREAT | PERMS);
 	semReset(sem_control, 0);
+	semReset(sem_control, 1);
 
 	key_t sem_modifa_key = ftok(PATH, MODIFA); // Sema Key generated
 	int sem_modifa = semget(sem_modifa_key, 1, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!

@@ -39,12 +39,12 @@ void server(){
 	TCar *tabCar = (TCar *) shmat(shm_race, NULL, 0);
     
     int i;
-    // Send weather to monitor and pilots
-	sendSig(randomWeather(), sem_control, 0);
 	TCar tabRead[22];
 	show_success("Server", "Initialisation complete");
 	// END INIT SECTION
 	do{
+	    // Send weather to monitor and pilots
+		sendSig(randomWeather(), sem_control, 1);
 		// Wait race type from Monitor
 		int type = 0;
 		while(!((type >= SIGTR1) && (type <= SIGGP))) type = getSig(sem_type, 0);
@@ -70,6 +70,7 @@ void server(){
 		// Init signal handler if race type based on time
 		if(type != SIGGP) signal(SIGALRM, endRace);
 		semReset(sem_control, 0);
+		semReset(sem_control, 1);
 		// Send start signal
 		sendSig(SIGSTART, sem_control, 0); 
 		switch(type){
@@ -105,10 +106,12 @@ void server(){
 							localStock.tabResult[k].lnum = tabRead[k].lnum;
 							localStock.tabResult[k].snum = tabRead[k].snum;
 
-							// Calculate lap time
-							localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
-							localStock.tabResult[k].timeGlobal += localStock.tabResult[k].timeLastLap;
-
+							// Calculate lap time only when the turn is over
+							if(localStock.tabResult[k].snum == 2)
+							{
+								localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
+								localStock.tabResult[k].timeGlobal += localStock.tabResult[k].timeLastLap;
+							}
 							localStock.tabResult[k].retired = tabRead[k].retired;
 							localStock.tabResult[k].pitstop = tabRead[k].pitstop;
 							if(localStock.bestDriver.time > localStock.tabResult[k].timeLastLap) // if best lap time is bigger than timeLastLap 
@@ -117,19 +120,20 @@ void server(){
 								localStock.bestDriver.teamName = localStock.tabResult[k].teamName;
 								localStock.bestDriver.num = localStock.tabResult[k].num;
 							}
-						    // write into the shared mem for monitor
-						    qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpfunct);
-							 
-						    while(!isShMemReadable(sem_DispSrv, DISP_READ));
-							semDown(sem_DispSrv, SRV_WRITE);
-							memcpy(listStock, &localStock, sizeof(TSharedStock)); // Put stock content into shared memory
-							semUp(sem_DispSrv, SRV_WRITE);
 							semReset(sem_modifa,0);
 						}
 						else k--;
 					}
 
 				}
+			    // write into the shared mem for monitor
+			    qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpfunct);
+				 
+			    while(!isShMemReadable(sem_DispSrv, DISP_READ));
+				semDown(sem_DispSrv, SRV_WRITE);
+				memcpy(listStock, &localStock, sizeof(TSharedStock)); // Put stock content into shared memory
+				semUp(sem_DispSrv, SRV_WRITE);
+				
 				if(type == SIGGP) currentLap++;
 			}	    
 		} while(!finished);

@@ -74,7 +74,7 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 		{
 			pilot->lapTimes[lap].tabSect[i].speed = speedWeather(weatherFactor, isDamaged);
 			pilot->lapTimes[lap].tabSect[i].stime = sectorTime(pilot->lapTimes[lap].tabSect[i].speed, i);
-			sleep(pilot->lapTimes[lap].tabSect[i].stime*0.1);
+			sleep(pilot->lapTimes[lap].tabSect[i].stime*0.05);
 			tireStatus = tireWear(tireStatus, weatherFactor);
 			if(!pilot->retired)
 			{
@@ -97,7 +97,7 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 							isDamaged = false;
 						}
 						pilot->pitstop = true;
-						sleep(pitstopsleep*0.1);
+						sleep(pitstopsleep*0.05);
 						pilot->lapTimes[lap].tabSect[i].stime += pitstopsleep;
 						// PITSTOP END
 					}
@@ -149,10 +149,11 @@ void pilot(int numCell, pid_t pid){
 	memcpy(&tabCar[numCell], &pilot, sizeof(TCar)); // Put cell content into the shared memory
 	semUp(sem_race, numCell);
 	semUp(sem_modif, numCell);
-	// Wait weather sig from server
-	while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 0);
-	pilot.tires = chooseTires(weather);
+
 	do{
+		// Wait weather sig from server
+		while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 1);
+		pilot.tires = chooseTires(weather);
 		int race = 0;
 		while(!((race >= SIGTR1) && (race <= SIGGP))) race = getSig(sem_type, 0);
 		startRace(tabCar, sem_race, sem_modif, numCell, &pilot, sem_control, weather);
