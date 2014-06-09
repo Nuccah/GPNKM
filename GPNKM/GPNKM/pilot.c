@@ -166,8 +166,8 @@ void pilot(int numCell, pid_t pid){
 	semDown(sem_race, numCell);
 	memcpy(&tabCar[numCell].num, &pilot.num, sizeof(int)); 
 	memcpy(&tabCar[numCell].teamName, &pilot.teamName, sizeof(const char *));
-	semUp(sem_race, numCell);
 	semSwitch(sem_switch, numCell);
+	semUp(sem_race, numCell);
 	do{
 		// Wait weather sig from server
 		while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 1);
@@ -175,6 +175,13 @@ void pilot(int numCell, pid_t pid){
 		int race = 0;
 		while((!((race >= SIGTR1) && (race <= SIGGP))) && (!checkSig(SIGEXIT, sem_control, 0))) race = getSig(sem_type, 0);
 		if(checkSig(SIGEXIT, sem_control, 0)) goto eop;
+		pilot.lnum = 0;
+		pilot.snum = 0;
+		semDown(sem_race, numCell);
+		memcpy(&tabCar[numCell].lnum, &pilot.lnum, sizeof(int));
+		memcpy(&tabCar[numCell].snum, &pilot.snum, sizeof(int));
+		semSwitch(sem_switch, numCell);
+		semUp(sem_race, numCell);
 		startRace(tabCar, sem_race, numCell, &pilot, sem_control, weather, sem_switch);
 	}while(!checkSig(SIGEXIT, sem_control, 0));
 	eop:
