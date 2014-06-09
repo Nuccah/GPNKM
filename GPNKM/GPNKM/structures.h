@@ -114,7 +114,8 @@ bool isShMemReadable(int sem_id, int sem_channel);
 void semReset(int sem_id, int sem_channel);
 // Return sem_channel of sem_id value
 int semGet(int sem_id, int sem_channel);
-
+// Set sem_channel of sem_id at val
+void semSet(int sem_id, int sem_channel, int val);
 // Switch sema between 1 and 0
 void semSwitch(int sem_id, int sem_channel);
 

@@ -34,6 +34,11 @@ int semGet(int sem_id, int sem_channel){
 	return semctl(sem_id, sem_channel, GETVAL);
 }
 
+// Set sem_channel of sem_id at val
+void semSet(int sem_id, int sem_channel, int val){
+	semctl(sem_id, sem_channel, SETVAL, val);
+}
+
 // Switch sema between 1 and 0
 void semSwitch(int sem_id, int sem_channel){
 	if(semctl(sem_id, sem_channel, GETVAL) == 1) semDown(sem_id, sem_channel);

@@ -27,7 +27,8 @@ int forkPilots(){
 	exit(EXIT_SUCCESS);
 }
 
-void startRace(TTabCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_control, int weatherFactor, int sem_switch)
+void startRace(TTabCar *tabCar1, TTabCar *tabCar2, TTabCar *tabCar3, int sem_race, int numCell, TCar *pilot, 
+				int sem_control, int weatherFactor, int sem_switch, int sem_ecr, int sem_lect)
 {
 	// INIT SECTION
 	key_t sem_pitstop_key = ftok(PATH, PIT);
@@ -37,7 +38,7 @@ void startRace(TTabCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_
 	// END INIT SECTION
 	// Send ready to server
 	//pilot->lapTimes = malloc(150*sizeof(TLap)); // Alloc sufficient laps for trial
-	sendReady(tabCar, sem_race, numCell, pilot); // Send ready to the server
+	sendReady(tabCar1, tabCar2, tabCar3, sem_switch, sem_ecr, sem_lect, sem_race, numCell, pilot); // Send ready to the server
 	waitSig(SIGSTART, sem_control, 0); // Wait for start signal
 	int i = 0;
 	int lap = 0;
@@ -118,14 +119,31 @@ void startRace(TTabCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_
 			printf(" | PID: %d", getpid());
 			printf("\n");			
 		}
-		semDown(sem_race, numCell);
-		memcpy(&tabCar[numCell].snum, &pilot->snum, sizeof(int));
-		memcpy(&tabCar[numCell].lnum, &pilot->lnum, sizeof(int));
-		memcpy(&tabCar[numCell].lapTimes[lap].tabSect[i], &run, sizeof(double));
-		memcpy(&tabCar[numCell].retired, &pilot->retired, sizeof(bool));
-		memcpy(&tabCar[numCell].pitstop, &pilot->pitstop, sizeof(bool));
+		semSet(sem_race, numCell, 0);
+		memcpy(&tabCar1[numCell].snum, &pilot->snum, sizeof(int));
+		memcpy(&tabCar1[numCell].lnum, &pilot->lnum, sizeof(int));
+		memcpy(&tabCar1[numCell].lapTimes[lap].tabSect[i].stime, &run.stime, sizeof(double));
+		memcpy(&tabCar1[numCell].lapTimes[lap].tabSect[i].speed, &run.speed, sizeof(double));
+		memcpy(&tabCar1[numCell].retired, &pilot->retired, sizeof(bool));
+		memcpy(&tabCar1[numCell].pitstop, &pilot->pitstop, sizeof(bool));
 		semSwitch(sem_switch, numCell);
-		semUp(sem_race, numCell);
+		semSet(sem_race, numCell, 1);
+		if(semGet(sem_ecr, numCell) != semGet(sem_lect, numCell)){
+			memcpy(&tabCar2[numCell].snum, &pilot->snum, sizeof(int));
+			memcpy(&tabCar2[numCell].lnum, &pilot->lnum, sizeof(int));
+			memcpy(&tabCar2[numCell].lapTimes[lap].tabSect[i].stime, &run.stime, sizeof(double));
+			memcpy(&tabCar2[numCell].lapTimes[lap].tabSect[i].speed, &run.speed, sizeof(double));
+			memcpy(&tabCar2[numCell].retired, &pilot->retired, sizeof(bool));
+			memcpy(&tabCar2[numCell].pitstop, &pilot->pitstop, sizeof(bool));
+			semSet(sem_ecr, numCell, semGet(sem_lect, numCell));			
+		}
+		memcpy(&tabCar3[numCell].snum, &pilot->snum, sizeof(int));
+		memcpy(&tabCar3[numCell].lnum, &pilot->lnum, sizeof(int));
+		memcpy(&tabCar3[numCell].lapTimes[lap].tabSect[i].stime, &run.stime, sizeof(double));
+		memcpy(&tabCar3[numCell].lapTimes[lap].tabSect[i].speed, &run.speed, sizeof(double));
+		memcpy(&tabCar3[numCell].retired, &pilot->retired, sizeof(bool));
+		memcpy(&tabCar3[numCell].pitstop, &pilot->pitstop, sizeof(bool));
+
 		
 		if(pilot->retired) finished = true;
 
@@ -135,7 +153,7 @@ void startRace(TTabCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_
 		}
 		i++;
 	}
-	sendOver(tabCar, sem_race, numCell, pilot);
+	sendOver(tabCar1, tabCar2, tabCar3, sem_switch, sem_ecr, sem_lect, sem_race, numCell, pilot);
 	semReset(sem_race, numCell);
 	semctl(sem_pitstop, numPit, IPC_RMID, NULL);
 }
@@ -151,23 +169,44 @@ void pilot(int numCell, pid_t pid){
 	key_t sem_switch_key = ftok(PATH, SWITCH);
 	int sem_switch = semget(sem_switch_key, 22, IPC_CREAT | PERMS);
 
+	key_t sem_ecr_key = ftok(PATH, SWITCH + 1);
+	int sem_ecr = semget(sem_ecr_key, 22, IPC_CREAT | PERMS);
+
+	key_t sem_lect_key = ftok(PATH, SWITCH + 2);
+	int sem_lect = semget(sem_lect_key, 22, IPC_CREAT | PERMS);
+
 	key_t sem_race_key = ftok(PATH, RACE);
 	int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS);
 
-	key_t shm_race_key = ftok(PATH, RACESHM);
-	int shm_race = shmget(shm_race_key, 22*sizeof(TTabCar), S_IWUSR);
-	TTabCar *tabCar = (TTabCar *)shmat(shm_race, NULL, 0);
+	key_t shm_race1_key = ftok(PATH, RACESHM);
+	int shm_race1 = shmget(shm_race1_key, 22*sizeof(TTabCar), S_IWUSR);
+	TTabCar *tabCar1 = (TTabCar *)shmat(shm_race1, NULL, 0);
+
+	key_t shm_race2_key = ftok(PATH, RACESHM + 1);
+	int shm_race2 = shmget(shm_race2_key, 22*sizeof(TTabCar), S_IWUSR);
+	TTabCar *tabCar2 = (TTabCar *)shmat(shm_race2, NULL, 0);
+
+	key_t shm_race3_key = ftok(PATH, RACESHM + 2);
+	int shm_race3 = shmget(shm_race3_key, 22*sizeof(TTabCar), S_IWUSR);
+	TTabCar *tabCar3 = (TTabCar *)shmat(shm_race3, NULL, 0);
 	// END INIT SECTION
 	int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
-	int weather = 1;
+	int weather = 1, j;
 	TCar pilot;
 	pilot.num = drivers[numCell];
 	pilot.teamName = getTeamName(pilot.num); 
-	semDown(sem_race, numCell);
-	memcpy(&tabCar[numCell].num, &pilot.num, sizeof(int)); 
-	memcpy(&tabCar[numCell].teamName, &pilot.teamName, sizeof(const char *));
+	semSet(sem_race, numCell, 0);
+	memcpy(&tabCar1[numCell].num, &pilot.num, sizeof(int)); 
+	memcpy(&tabCar1[numCell].teamName, &pilot.teamName, sizeof(const char *));
 	semSwitch(sem_switch, numCell);
-	semUp(sem_race, numCell);
+	semSet(sem_race, numCell, 1);
+	if(semGet(sem_lect, numCell) != semGet(sem_ecr, numCell)){
+		memcpy(&tabCar2[numCell].num, &pilot.num, sizeof(int)); 
+		memcpy(&tabCar2[numCell].teamName, &pilot.teamName, sizeof(const char *));
+		semSet(sem_ecr, numCell, semGet(sem_lect, numCell));	
+	}
+	memcpy(&tabCar3[numCell].num, &pilot.num, sizeof(int)); 
+	memcpy(&tabCar3[numCell].teamName, &pilot.teamName, sizeof(const char *));
 	do{
 		// Wait weather sig from server
 		while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 1);
@@ -177,21 +216,35 @@ void pilot(int numCell, pid_t pid){
 		if(checkSig(SIGEXIT, sem_control, 0)) goto eop;
 		pilot.lnum = 0;
 		pilot.snum = 0;
-		semDown(sem_race, numCell);
-		memcpy(&tabCar[numCell].lnum, &pilot.lnum, sizeof(int));
-		memcpy(&tabCar[numCell].snum, &pilot.snum, sizeof(int));
+		semSet(sem_race, numCell, 0);
+		memcpy(&tabCar1[numCell].lnum, &pilot.lnum, sizeof(int));
+		memcpy(&tabCar1[numCell].snum, &pilot.snum, sizeof(int));
 		semSwitch(sem_switch, numCell);
-		semUp(sem_race, numCell);
-		startRace(tabCar, sem_race, numCell, &pilot, sem_control, weather, sem_switch);
+		semSet(sem_race, numCell, 1);
+		if(semGet(sem_lect, numCell) != semGet(sem_ecr, numCell)){
+			memcpy(&tabCar2[numCell].lnum, &pilot.lnum, sizeof(int));
+			memcpy(&tabCar2[numCell].snum, &pilot.snum, sizeof(int));
+			semSet(sem_ecr, numCell, semGet(sem_lect, numCell));
+		}
+		memcpy(&tabCar3[numCell].lnum, &pilot.lnum, sizeof(int));
+		memcpy(&tabCar3[numCell].snum, &pilot.snum, sizeof(int));				
+
+		startRace(tabCar1, tabCar2, tabCar3, sem_race, numCell, &pilot, sem_control, weather, sem_switch, sem_ecr, sem_lect);
 	}while(!checkSig(SIGEXIT, sem_control, 0));
 	eop:
-		shmdt(&shm_race);
+		shmdt(&shm_race1);
+		shmdt(&shm_race2);
+		shmdt(&shm_race3);
 		semctl(sem_type, 0, IPC_RMID, NULL);
 		semctl(sem_race, numCell, IPC_RMID, NULL);
 		semctl(sem_control, 0, IPC_RMID, NULL);
 		semctl(sem_control, 1, IPC_RMID, NULL);
-		shmctl(shm_race, IPC_RMID, NULL);
+		shmctl(shm_race1, IPC_RMID, NULL);
+		shmctl(shm_race2, IPC_RMID, NULL);
+		shmctl(shm_race3, IPC_RMID, NULL);
 		semctl(sem_switch, numCell, IPC_RMID, NULL);
+		semctl(sem_ecr, numCell, IPC_RMID, NULL);
+		semctl(sem_lect, numCell, IPC_RMID, NULL);
 		return;
 }
 
@@ -335,18 +388,33 @@ void exitPitstop(int numPit, int sem_pitstop)
 	semUp(sem_pitstop, numPit);
 }
 
-void sendReady(TTabCar *tabCar, int sem_race, int numCell, TCar *pilot)
+void sendReady(TTabCar *tabCar1, TTabCar *tabCar2, TTabCar *tabCar3, int sem_switch, int sem_ecr,
+				int sem_lect, int sem_race, int numCell, TCar *pilot)
 {
 	pilot->ready = true;
 	semDown(sem_race, numCell);
-	memcpy(&tabCar[numCell].ready, &pilot->ready, sizeof(bool));
+	memcpy(&tabCar1[numCell].ready, &pilot->ready, sizeof(bool));
+	semSwitch(sem_switch, numCell);
 	semUp(sem_race, numCell);
+	if(semGet(sem_ecr, numCell) != semGet(sem_lect, numCell)){
+		memcpy(&tabCar2[numCell].ready, &pilot->ready, sizeof(bool));
+		semSet(sem_ecr, numCell, semGet(sem_lect, numCell));
+	}
+	memcpy(&tabCar3[numCell].ready, &pilot->ready, sizeof(bool));
+
 }
 
-void sendOver(TTabCar *tabCar, int sem_race, int numCell, TCar *pilot)
+void sendOver(TTabCar *tabCar1, TTabCar *tabCar2, TTabCar *tabCar3, int sem_switch, int sem_ecr,
+				int sem_lect, int sem_race, int numCell, TCar *pilot)
 {
 	pilot->ready = false;
 	semDown(sem_race, numCell);
-	memcpy(&tabCar[numCell].ready, &pilot->ready, sizeof(bool));
-	semUp(sem_race, numCell);	
+	memcpy(&tabCar1[numCell].ready, &pilot->ready, sizeof(bool));
+	semSwitch(sem_switch, numCell);
+	semUp(sem_race, numCell);
+	if(semGet(sem_ecr, numCell) != semGet(sem_lect, numCell)){
+		memcpy(&tabCar2[numCell].ready, &pilot->ready, sizeof(bool));
+		semSet(sem_ecr, numCell, semGet(sem_lect, numCell));
+	}
+	memcpy(&tabCar3[numCell].ready, &pilot->ready, sizeof(bool));
 }

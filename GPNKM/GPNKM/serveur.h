@@ -7,7 +7,7 @@ double lapTime(TSect *tabSect);
 double globalAverageSpeed(TCar pilot);
 double lapAverageSpeed(TLap lap);
 bool isTabCarReadable(int sem_id);
-typedef int (*compfn)(const void*, const void*);
+
 
 void endRace(int sig);
 

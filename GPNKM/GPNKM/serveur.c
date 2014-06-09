@@ -24,6 +24,12 @@ void server(){
 	key_t sem_switch_key = ftok(PATH, SWITCH);
 	int sem_switch = semget(sem_switch_key, 22, IPC_CREAT | PERMS);
 
+	key_t sem_ecr_key = ftok(PATH, SWITCH + 1);
+	int sem_ecr = semget(sem_ecr_key, 22, IPC_CREAT | PERMS);
+
+	key_t sem_lect_key = ftok(PATH, SWITCH + 2);
+	int sem_lect = semget(sem_lect_key, 22, IPC_CREAT | PERMS);
+
     key_t sem_DispSrv_key = ftok(PATH, STOCK);
     int sem_DispSrv = semget(sem_DispSrv_key, 2, IPC_CREAT | PERMS);
 
@@ -31,9 +37,17 @@ void server(){
     int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), S_IWUSR);
 	TSharedStock *listStock = (TSharedStock *) shmat(shm_DispSrv, NULL, 0);
 
-	key_t shm_race_key = ftok(PATH, RACESHM);
-	int shm_race = shmget(shm_race_key, 22*sizeof(TTabCar), S_IRUSR);
-	TTabCar *tabCar = (TTabCar *) shmat(shm_race, NULL, 0);
+	key_t shm_race1_key = ftok(PATH, RACESHM);
+	int shm_race1 = shmget(shm_race1_key, 22*sizeof(TTabCar), S_IWUSR);
+	TTabCar *tabCar1 = (TTabCar *)shmat(shm_race1, NULL, 0);
+
+	key_t shm_race2_key = ftok(PATH, RACESHM + 1);
+	int shm_race2 = shmget(shm_race2_key, 22*sizeof(TTabCar), S_IWUSR);
+	TTabCar *tabCar2 = (TTabCar *)shmat(shm_race2, NULL, 0);
+
+	key_t shm_race3_key = ftok(PATH, RACESHM + 2);
+	int shm_race3 = shmget(shm_race3_key, 22*sizeof(TTabCar), S_IWUSR);
+	TTabCar *tabCar3 = (TTabCar *)shmat(shm_race3, NULL, 0);
     
 	show_success("Server", "Initialisation complete");
 	// END INIT SECTION
@@ -64,14 +78,22 @@ void server(){
 		semSwitch(sem_DispSrv, SRV_SWITCH);
 		
 		// Wait for drivers ready
+		TTabCar tmp1[22], tmp2[22];
 		for(i = 0; i < 22; i++){ 
 			do{
-				int sswitch, sdrap;
-				do{
-					sswitch = semGet(sem_switch, i);
-					sdrap = semGet(sem_race, i);
-					memcpy(&tabRead[i], &tabCar[i], sizeof(TTabCar));
-				} while((sdrap != 1) && (semGet(sem_race, i) != 1) && (sswitch != semGet(sem_switch, i)));
+				int sswitch, sswitch2, sdrap, sdrap2;
+				if(semGet(sem_ecr, i) == 1) semSet(sem_lect, i, 0);
+				else semSet(sem_lect, i, 1);
+				sdrap = semGet(sem_race, i);
+				sswitch = semGet(sem_switch, i);
+				memcpy(&tmp1[i], &tabCar1[i], sizeof(TTabCar));
+				sdrap2 = semGet(sem_race, i);
+				sswitch2 = semGet(sem_switch, i);
+				memcpy(&tmp2[i], &tabCar3[i], sizeof(TTabCar));
+				bool d1_wrong = (sswitch != sswitch2) || (sdrap != 1) || (sdrap2 != 1);
+				if(semGet(sem_lect, i) == semGet(sem_ecr, i)) memcpy(&tabRead[i], &tabCar2[i], sizeof(TCar));
+				else if(d1_wrong) memcpy(&tabRead[i], &tmp2[i], sizeof(TTabCar));
+				else memcpy(&tabRead[i], &tmp1[i], sizeof(TTabCar));
 				localStock.tabResult[i].teamName = tabRead[i].teamName;
 				localStock.tabResult[i].num = tabRead[i].num;
 				localStock.tabResult[i].timeGlobal = 0.0;
@@ -126,28 +148,51 @@ void server(){
 						tmpLap = localStock.tabResult[k].lnum;
 						tmpSec = localStock.tabResult[k].snum;
 
-						int sswitch, sdrap;
-						do{
-							sdrap = semGet(sem_race, k);
-							sswitch = semGet(sem_switch, k);
-							memcpy(&tabRead[k].lnum, &tabCar[k].lnum, sizeof(int));
-							memcpy(&tabRead[k].snum, &tabCar[k].snum, sizeof(int));
+						int sswitch, sswitch2, sdrap, sdrap2;
+						if(semGet(sem_ecr, i) == 1) semSet(sem_lect, i, 0);
+						else semSet(sem_lect, i, 1);
+						sdrap = semGet(sem_race, k);
+						sswitch = semGet(sem_switch, k);
+						memcpy(&tmp1[k].lnum, &tabCar1[k].lnum, sizeof(int));
+						memcpy(&tmp1[k].snum, &tabCar1[k].snum, sizeof(int));
+						for(i=tmpLap; i <= tmp1[k].lnum; i++){
+							memcpy(&tmp1[k].lapTimes[i], &tabCar1[k].lapTimes[i], sizeof(TLap));
+						}
+						memcpy(&tmp1[k].retired, &tabCar1[k].retired, sizeof(bool));
+						memcpy(&tmp1[k].pitstop, &tabCar1[k].pitstop, sizeof(bool));
+						sdrap2 = semGet(sem_race, k);
+						sswitch2 = semGet(sem_switch, k);
+						memcpy(&tmp2[k].lnum, &tabCar3[k].lnum, sizeof(int));
+						memcpy(&tmp2[k].snum, &tabCar3[k].snum, sizeof(int));
+						for(i=tmpLap; i <= tmp2[k].lnum; i++){
+							memcpy(&tmp2[k].lapTimes[i], &tabCar3[k].lapTimes[i], sizeof(TLap));
+						}
+						memcpy(&tmp2[k].retired, &tabCar3[k].retired, sizeof(bool));
+						memcpy(&tmp2[k].pitstop, &tabCar3[k].pitstop, sizeof(bool));
+						bool d1_wrong = ((sswitch != sswitch2) || (sdrap != 1) || (sdrap2 != 1));
+						if(semGet(sem_lect, k) == semGet(sem_ecr, k)){
+							memcpy(&tabRead[k].lnum, &tabCar2[k].lnum, sizeof(int));
+							memcpy(&tabRead[k].snum, &tabCar2[k].snum, sizeof(int));
 							for(i=tmpLap; i <= tabRead[k].lnum; i++){
-								memcpy(&tabRead[k].lapTimes[i], &tabCar[k].lapTimes[i], sizeof(TLap));
+								memcpy(&tabRead[k].lapTimes[i], &tabCar2[k].lapTimes[i], sizeof(TLap));
 							}
-							memcpy(&tabRead[k].retired, &tabCar[k].retired, sizeof(bool));
-							memcpy(&tabRead[k].pitstop, &tabCar[k].pitstop, sizeof(bool));
-						} while((sdrap != 1) && (semGet(sem_race, k) != 1) && (sswitch != semGet(sem_switch, k)));
+							memcpy(&tabRead[k].retired, &tabCar2[k].retired, sizeof(bool));
+							memcpy(&tabRead[k].pitstop, &tabCar2[k].pitstop, sizeof(bool));							
+						}
+						else if(d1_wrong) memcpy(&tabRead[k], &tmp2[k], sizeof(TTabCar));
+						else memcpy(&tabRead[k], &tmp1[k], sizeof(TTabCar));
 						
 						localStock.tabResult[k].lnum = tabRead[k].lnum;
 						localStock.tabResult[k].snum = tabRead[k].snum;
 						if(tmpLap == tabRead[k].lnum)
 						{
-							for(j=tmpSec; j <= tabRead[k].snum; j++)
-							{
-								if(localStock.tabResult[k].snum == 2) 
-									localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tmpLap].tabSect);
-								localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[tmpLap].tabSect[j].stime;
+							if(tmpSec != tabRead[k].snum){
+								for(j=tmpSec; j <= tabRead[k].snum; j++)
+								{
+									if(localStock.tabResult[k].snum == 2) 
+										localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tmpLap].tabSect);
+									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[tmpLap].tabSect[j].stime;
+								}
 							}
 						}
 						else
@@ -218,19 +263,49 @@ void server(){
 	    	int s;
 	    	show_notice("Server", "Waiting last drivers informations and end of run");
 	    	for(s=0; s<22; s++){
-	    		int sswitch, sdrap;
+	    		int sswitch, sdrap, sswitch2, sdrap2;
 				do{
+					if(semGet(sem_ecr, i) == 1) semSet(sem_lect, i, 0);
+					else semSet(sem_lect, i, 1);
 					sdrap = semGet(sem_race, k);
 					sswitch = semGet(sem_switch, k);
-					memcpy(&tabRead[s].ready, &tabCar[s].ready, sizeof(bool));
-				}while(tabRead[k].ready && (sdrap != 1) && (semGet(sem_race, k) != 1) && (sswitch != semGet(sem_switch, k)));
+					memcpy(&tmp1[s].ready, &tabCar1[s].ready, sizeof(bool));
+					sdrap2 = semGet(sem_race, k);
+					sswitch2 = semGet(sem_switch, k);
+					memcpy(&tmp2[s].ready, &tabCar3[s].ready, sizeof(bool));
+					bool d1_wrong = ((sswitch != sswitch2) || (sdrap != 1) || (sdrap2 != 1));
+					if(semGet(sem_ecr, s) == semGet(sem_lect, s)){
+						memcpy(&tabRead[s].ready, &tabCar2[s].ready, sizeof(bool));
+						semSet(sem_ecr, s, semGet(sem_lect, s));
+					}
+					else if(d1_wrong) memcpy(&tabRead[s], &tmp2[s], sizeof(TTabCar));
+					else memcpy(&tabRead[s], &tmp1[s], sizeof(TTabCar));
+				}while(tabRead[s].ready);
 	    	}
 	    	for(s=0;s<22;s++) semReset(sem_race, s);
 	    	show_success("Server", "Race terminated!");
 	}while(!checkSig(SIGEXIT, sem_control, 0));
 	eop:
-		shmdt(&shm_race);
+		shmdt(&shm_race1);
+		shmdt(&shm_race2);
+		shmdt(&shm_race3);
 		shmdt(&shm_DispSrv);
+		int i;
+		for(i = 0; i < 22; i++){
+			semctl(sem_race, i, IPC_RMID, NULL);
+			semctl(sem_switch, i, IPC_RMID, NULL);
+			semctl(sem_ecr, i, IPC_RMID, NULL);
+			semctl(sem_lect, i, IPC_RMID, NULL);
+		}
+		semctl(sem_type, 0, IPC_RMID, NULL);
+		semctl(sem_control, 0, IPC_RMID, NULL);
+		semctl(sem_control, 1, IPC_RMID, NULL);
+		shmctl(shm_race1, IPC_RMID, NULL);
+		shmctl(shm_race2, IPC_RMID, NULL);
+		shmctl(shm_race3, IPC_RMID, NULL);
+		shmctl(shm_DispSrv, IPC_RMID, NULL);
+		semctl(sem_DispSrv, SRV_WRITE, IPC_RMID, NULL);
+		semctl(sem_DispSrv, SRV_SWITCH, IPC_RMID, NULL);
 		return;
 }
 
@@ -246,7 +321,7 @@ void endRace(int sig){
     signal(SIGALRM, SIG_IGN);
     printf("\n-------------------- Alarm ended ------------------\n\n");
 	key_t sem_control_key = ftok(PATH, CONTROL);
-	int sem_control = semget(sem_control_key, 1, IPC_CREAT | PERMS);
+	int sem_control = semget(sem_control_key, 2, IPC_CREAT | PERMS);
 	sendSig(SIGEND, sem_control, 0);
 }
 

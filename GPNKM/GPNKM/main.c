@@ -44,16 +44,30 @@ int main (int argc, char *argv[])
 		key_t sem_switch_key = ftok(PATH, SWITCH);
 		int sem_switch = semget(sem_switch_key, 22, IPC_CREAT | PERMS);
 		int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
+
+		key_t sem_ecr_key = ftok(PATH, SWITCH + 1);
+		int sem_ecr = semget(sem_ecr_key, 22, IPC_CREAT | PERMS);
+
+		key_t sem_lect_key = ftok(PATH, SWITCH + 2);
+		int sem_lect = semget(sem_lect_key, 22, IPC_CREAT | PERMS);
 		int i;
 		for(i = 0; i < 22; i++){
 			semReset(sem_race, i);
 			semReset(sem_switch, i);
+			semReset(sem_ecr, i);
+			semReset(sem_lect, i);
 		}				
 		//*****************//
 		//*SHARED MEM INIT*//
 		//*****************//
-		key_t shm_race_key = ftok(PATH, RACESHM);
-		int shm_race = shmget(shm_race_key, 22*sizeof(TTabCar), IPC_CREAT | PERMS); // Creation Race Shared Memory
+		key_t shm_race1_key = ftok(PATH, RACESHM);
+		int shm_race1 = shmget(shm_race1_key, 22*sizeof(TTabCar), IPC_CREAT | PERMS);
+
+		key_t shm_race2_key = ftok(PATH, RACESHM + 1);
+		int shm_race2 = shmget(shm_race2_key, 22*sizeof(TTabCar), IPC_CREAT | PERMS);
+
+		key_t shm_race3_key = ftok(PATH, RACESHM + 2);
+		int shm_race3 = shmget(shm_race3_key, 22*sizeof(TTabCar), IPC_CREAT | PERMS);
 
 		//***********//
 		//*PIPE INIT*//
@@ -71,11 +85,15 @@ int main (int argc, char *argv[])
 		for(i = 0; i < 22; i++){
 			semctl(sem_race, i, IPC_RMID, NULL);
 			semctl(sem_switch, i, IPC_RMID, NULL);
+			semctl(sem_ecr, i, IPC_RMID, NULL);
+			semctl(sem_lect, i, IPC_RMID, NULL);
 		}
 		semctl(sem_type, 0, IPC_RMID, NULL);
 		semctl(sem_control, 0, IPC_RMID, NULL);
 		semctl(sem_control, 1, IPC_RMID, NULL);
-		shmctl(shm_race, IPC_RMID, NULL);
+		shmctl(shm_race1, IPC_RMID, NULL);
+		shmctl(shm_race2, IPC_RMID, NULL);
+		shmctl(shm_race3, IPC_RMID, NULL);
 		shmctl(shm_DispSrv, IPC_RMID, NULL);
 		semctl(sem_DispSrv, SRV_WRITE, IPC_RMID, NULL);
 		semctl(sem_DispSrv, SRV_SWITCH, IPC_RMID, NULL);

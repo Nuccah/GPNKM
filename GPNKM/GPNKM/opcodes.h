@@ -40,10 +40,10 @@
 #define MODIF 15
 #define MODIFA 25
 #define SRV 26
-#define SWITCH 27
+#define SWITCH 50
 #define SWDISPSRV 28
 
-#define RACESHM 22
+#define RACESHM 100
 #define STOCKSHM 23
 #define PITSHM 24
 
