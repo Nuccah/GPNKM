@@ -141,24 +141,41 @@ void server(){
 						
 						localStock.tabResult[k].lnum = tabRead[k].lnum;
 						localStock.tabResult[k].snum = tabRead[k].snum;
-						
-						for(i=tmpLap; i <= tabRead[k].lnum; i++){
-							if(i == tmpLap) {
-								for(j=tmpSec; j <= tabRead[k].snum; j++){
-									if(localStock.tabResult[k].snum == 2) 
-										localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
-									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[tabRead[k].lnum].tabSect[tabRead[k].snum].stime;
-								}
-							 }
-							 else{
-								for(j=0; j <= tabRead[k].snum; j++){
-									if(localStock.tabResult[k].snum == 2) 
-										localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
-									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[tabRead[k].lnum].tabSect[tabRead[k].snum].stime;
-								}						 	
-							 }
+						if(tmpLap == tabRead[k].lnum)
+						{
+							for(j=tmpSec; j <= tabRead[k].snum; j++)
+							{
+								if(localStock.tabResult[k].snum == 2) 
+									localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tmpLap].tabSect);
+								localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[tmpLap].tabSect[j].stime;
+							}
 						}
-
+						else
+						{
+							for(i=tmpLap; i <=tabRead[k].lnum; i++){
+								if(i == tmpLap){
+									for(j=tmpSec; j<=2; j++){
+										if(localStock.tabResult[k].snum == 2) 
+											localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[i].tabSect);
+										localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
+									}
+								}
+								else if(i == tabRead[k].lnum){
+									for(j=0; j<=tabRead[k].snum; j++){
+										if(localStock.tabResult[k].snum == 2) 
+											localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[i].tabSect);
+										localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
+									}
+								}
+								else{
+									for(j=0; j<=2; j++){
+										if(localStock.tabResult[k].snum == 2) 
+											localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[i].tabSect);
+										localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
+									}
+								}
+							}
+						}
 						// Calculate lap time only when the turn is over
 						localStock.tabResult[k].retired = tabRead[k].retired;
 						localStock.tabResult[k].pitstop = tabRead[k].pitstop;
