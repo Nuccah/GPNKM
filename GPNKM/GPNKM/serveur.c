@@ -74,8 +74,8 @@ void server(){
 				} while((sdrap != 1) && (semGet(sem_race, i) != 1) && (sswitch != semGet(sem_switch, i)));
 				localStock.tabResult[i].teamName = tabRead[i].teamName;
 				localStock.tabResult[i].num = tabRead[i].num;
-				localStock.tabResult[i].timeGlobal = 0;
-				localStock.tabResult[i].timeLastLap = 0;
+				localStock.tabResult[i].timeGlobal = 0.0;
+				localStock.tabResult[i].timeLastLap = 0.0;
 				localStock.tabResult[i].lnum = 0;
 				localStock.tabResult[i].snum = 0;
 			}while(!tabRead[i].ready);
@@ -127,20 +127,25 @@ void server(){
 						do{
 							sdrap = semGet(sem_race, k);
 							sswitch = semGet(sem_switch, k);
-							memcpy(&tabRead[k], &tabCar[k], sizeof(TCar));
+							memcpy(&tabRead[k].lnum, &tabCar[k].lnum, sizeof(int));
+							memcpy(&tabRead[k].snum, &tabCar[k].snum, sizeof(int));
+							for(i=tmpLap; i <= tabRead[k].lnum; i++){
+								memcpy(&tabRead[k].lapTimes[i], &tabCar[k].lapTimes[i], sizeof(TLap));
+							}
+							memcpy(&tabRead[k].retired, &tabCar[k].retired, sizeof(bool));
+							memcpy(&tabRead[k].pitstop, &tabCar[k].pitstop, sizeof(bool));
 						} while((sdrap != 1) && (semGet(sem_race, k) != 1) && (sswitch != semGet(sem_switch, k)));
 						
 						localStock.tabResult[k].lnum = tabRead[k].lnum;
 						localStock.tabResult[k].snum = tabRead[k].snum;
 						
-						if(tmpLap != tabRead[k].lnum){ // If lap changed
-							localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tmpLap].tabSect);
-							localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[tabRead[k].lnum].tabSect[tabRead[k].snum].stime; 
-						}
-						else{ // If lap didn't change
-							if(tmpSec != tabRead[k].snum){ // If sector changed
+						for(i=tmpLap; i <=tabRead[k].lnum; i++){
+							for(j=tmpSec; j<=tabRead[k].snum; j++){
+								if(localStock.tabResult[k].snum == 2) 
+									localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
 								localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[tabRead[k].lnum].tabSect[tabRead[k].snum].stime;
 							}
+							 
 						}
 
 						// Calculate lap time only when the turn is over
@@ -163,9 +168,13 @@ void server(){
 					  		printf("\n");
 					  	}
 					  	// write into the shared mem for monitor
-						//qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpfunct);
 						semDown(sem_DispSrv, SRV_WRITE);
-						memcpy(listStock, &localStock, sizeof(TSharedStock)); // Put stock content into shared memory
+						memcpy(&listStock->tabResult[k].retired, &localStock.tabResult[k].retired, sizeof(bool));
+						memcpy(&listStock->tabResult[k].pitstop, &localStock.tabResult[k].pitstop, sizeof(bool));
+						memcpy(&listStock->tabResult[k].timeLastLap, &localStock.tabResult[k].timeLastLap, sizeof(double));
+						memcpy(&listStock->tabResult[k].timeGlobal, &localStock.tabResult[k].timeGlobal, sizeof(double));
+						memcpy(&listStock->tabResult[k].lnum, &localStock.tabResult[k].lnum, sizeof(int));
+						memcpy(&listStock->tabResult[k].snum, &localStock.tabResult[k].snum, sizeof(int));
 						semUp(sem_DispSrv, SRV_WRITE);
 						semSwitch(sem_DispSrv, SRV_SWITCH);
 					}
@@ -204,21 +213,3 @@ void endRace(int sig){
 	sendSig(SIGEND, sem_control, 0);
 }
 
-int cmpfunct(TResults *a, TResults *b){
-	if(a->lnum == b->lnum)
-	{
-		if(a->snum ==  b->snum)
-			if (a->timeGlobal <  b->timeGlobal) return -1;
-			else if (a->timeGlobal >  b->timeGlobal) return 1;
-			else return 0;
-		else
-		{
-			if (a->snum < b->snum) return 1;
-			else return -1;
-		} 
-			
-	}
-	else
-		if (a->lnum < b->lnum) return 1;
-		else return -1;
-}

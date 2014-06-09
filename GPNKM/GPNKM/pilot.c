@@ -119,7 +119,11 @@ void startRace(TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_con
 			printf("\n");			
 		}
 		semDown(sem_race, numCell);
-		memcpy(&tabCar[numCell], pilot, sizeof(TCar)); // Put cell content into the shared memory
+		memcpy(&tabCar[numCell].snum, &pilot->snum, sizeof(int));
+		memcpy(&tabCar[numCell].lnum, &pilot->lnum, sizeof(int));
+		memcpy(&tabCar[numCell].lapTimes[lap].tabSect[i].stime, &pilot->lapTimes[lap].tabSect[i].stime, sizeof(double));
+		memcpy(&tabCar[numCell].retired, &pilot->retired, sizeof(bool));
+		memcpy(&tabCar[numCell].pitstop, &pilot->pitstop, sizeof(bool));
 		semUp(sem_race, numCell);
 		semSwitch(sem_switch, numCell);
 		

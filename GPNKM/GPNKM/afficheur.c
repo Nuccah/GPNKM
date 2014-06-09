@@ -13,8 +13,14 @@ void scoreMonitor(int sem_control, int type){
 	waitSig(SIGSTART, sem_control, 0);
 	printf("Run begins!!!\n\n");
 	bool finished = false;
-	int new_switch, old_switch = 1;
+	int new_switch, old_switch = 1, k, i;
 	TSharedStock localStock;
+	for(i = 0; i < 22; i++){
+		localStock.tabResult[i].timeGlobal = 0.0;
+		localStock.tabResult[i].timeLastLap = 0.0;
+		localStock.tabResult[i].lnum = 0;
+		localStock.tabResult[i].snum = 0;
+	}
 	do{
 		if(checkSig(SIGEND, sem_control, 0)) finished = true;
 		else{	
@@ -25,9 +31,19 @@ void scoreMonitor(int sem_control, int type){
 				do{
 					sdrap = semGet(sem_DispSrv, SRV_WRITE);
 					sswitch = semGet(sem_DispSrv, SRV_SWITCH);
-					memcpy(&localStock, listStock, sizeof(TSharedStock));
+					for(k=0; k<22; k++){
+						memcpy(&localStock.tabResult[k].retired, &listStock->tabResult[k].retired, sizeof(bool));
+						memcpy(&localStock.tabResult[k].pitstop, &listStock->tabResult[k].pitstop, sizeof(bool));
+						memcpy(&localStock.tabResult[k].timeLastLap, &listStock->tabResult[k].timeLastLap, sizeof(double));
+						memcpy(&localStock.tabResult[k].timeGlobal, &listStock->tabResult[k].timeGlobal, sizeof(double));
+						memcpy(&localStock.tabResult[k].lnum, &listStock->tabResult[k].lnum, sizeof(int));
+						memcpy(&localStock.tabResult[k].snum, &listStock->tabResult[k].snum, sizeof(int));
+						memcpy(&localStock.tabResult[k].teamName, &listStock->tabResult[k].teamName, sizeof(char *));
+						memcpy(&localStock.tabResult[k].num, &listStock->tabResult[k].num, sizeof(int));
+					}
 				}while((sdrap != 1) && (semGet(sem_DispSrv, SRV_WRITE) != 1) && (sswitch != semGet(sem_DispSrv, SRV_SWITCH)));
 				if(DISPMODE == 0){
+					//qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpfunct);
 					int i;
 					system("clear");
 					for(i = 0; i < 22; i++){
@@ -187,4 +203,23 @@ void showMainMenu()
 		default  : showMainMenu(); break;
 	}
     fflush(stdin);
+}
+
+int cmpfunct(TResults *a, TResults *b){
+	if(a->lnum == b->lnum)
+	{
+		if(a->snum ==  b->snum)
+			if (a->timeGlobal <  b->timeGlobal) return -1;
+			else if (a->timeGlobal >  b->timeGlobal) return 1;
+			else return 0;
+		else
+		{
+			if (a->snum < b->snum) return 1;
+			else return -1;
+		} 
+			
+	}
+	else
+		if (a->lnum < b->lnum) return 1;
+		else return -1;
 }
