@@ -110,15 +110,18 @@ void server(){
 		semReset(sem_type, 0);
 		bool finished = false;
 		int currentLap = 0;
-		int tmpLap = 0, tmpSec = 0, k, old_switch = 1, new_switch;
+		int tmpLap = 0, tmpSec = 0, k;
+		int tab_old[22];
+		for(i=0; i<22;i++) tab_old[i] = 0;
+		int tab_new[22];
 		do {
 			if((type != SIGGP) && checkSig(SIGEND, sem_control, 0)) finished = true;
 			if((type == SIGGP) && (currentLap >= LAPGP)) goto end;
 			else{
 				for(k = 0; k < 22; k++){
-					new_switch = semGet(sem_switch, k);
-					if(new_switch != old_switch){
-						old_switch = new_switch;
+					tab_new[k] = semGet(sem_switch, k);
+					if(tab_new[k] != tab_old[k]){
+						tab_old[k] = tab_new[k];
 						// Read in shared table
 						tmpLap = localStock.tabResult[k].lnum;
 						tmpSec = localStock.tabResult[k].snum;
@@ -139,13 +142,21 @@ void server(){
 						localStock.tabResult[k].lnum = tabRead[k].lnum;
 						localStock.tabResult[k].snum = tabRead[k].snum;
 						
-						for(i=tmpLap; i <=tabRead[k].lnum; i++){
-							for(j=tmpSec; j<=tabRead[k].snum; j++){
-								if(localStock.tabResult[k].snum == 2) 
-									localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
-								localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[tabRead[k].lnum].tabSect[tabRead[k].snum].stime;
-							}
-							 
+						for(i=tmpLap; i <= tabRead[k].lnum; i++){
+							if(i == tmpLap) {
+								for(j=tmpSec; j <= tabRead[k].snum; j++){
+									if(localStock.tabResult[k].snum == 2) 
+										localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
+									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[tabRead[k].lnum].tabSect[tabRead[k].snum].stime;
+								}
+							 }
+							 else{
+								for(j=0; j <= tabRead[k].snum; j++){
+									if(localStock.tabResult[k].snum == 2) 
+										localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tabRead[k].lnum].tabSect);
+									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[tabRead[k].lnum].tabSect[tabRead[k].snum].stime;
+								}						 	
+							 }
 						}
 
 						// Calculate lap time only when the turn is over

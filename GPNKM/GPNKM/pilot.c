@@ -164,7 +164,8 @@ void pilot(int numCell, pid_t pid){
 	pilot.num = drivers[numCell];
 	pilot.teamName = getTeamName(pilot.num); 
 	semDown(sem_race, numCell);
-	memcpy(&tabCar[numCell], &pilot, sizeof(TCar)); // Put cell content into the shared memory
+	memcpy(&tabCar[numCell].num, &pilot.num, sizeof(int)); 
+	memcpy(&tabCar[numCell].teamName, &pilot.teamName, sizeof(const char *));
 	semUp(sem_race, numCell);
 	semSwitch(sem_switch, numCell);
 	do{
