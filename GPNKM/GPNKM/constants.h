@@ -36,7 +36,7 @@
 * Default is 1
 * Recommended level for prod is 0
 */
-#define DISPMODE 1
+#define DISPMODE 0
 
 // Permission to Shared Memory
 #define PERMS 0666

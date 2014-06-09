@@ -43,7 +43,7 @@ void scoreMonitor(int sem_control, int type){
 					}
 				}while((sdrap != 1) && (semGet(sem_DispSrv, SRV_WRITE) != 1) && (sswitch != semGet(sem_DispSrv, SRV_SWITCH)));
 				if(DISPMODE == 0){
-					//qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpfunct);
+					qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpfunct);
 					int i;
 					system("clear");
 					for(i = 0; i < 22; i++){
@@ -57,7 +57,6 @@ void scoreMonitor(int sem_control, int type){
 						printf(" | Pitstop : %s\n", localStock.tabResult[i].pitstop ? "yes" : "no");
 					}					
 				}
-				sleep(1);
 			}
 		} 
 	}while(!finished);
