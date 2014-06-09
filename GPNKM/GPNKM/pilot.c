@@ -27,14 +27,11 @@ int forkPilots(){
 	exit(EXIT_SUCCESS);
 }
 
-void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pilot, int sem_control, int weatherFactor)
+void startRace(TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_control, int weatherFactor, int sem_switch)
 {
 	// INIT SECTION
 	key_t sem_pitstop_key = ftok(PATH, PIT);
-	int sem_pitstop = semget(sem_pitstop_key, 11, IPC_CREAT | PERMS);
-	
-	key_t sem_srv_key = ftok(PATH, SRV);
-    int sem_srv = semget(sem_srv_key, 22, IPC_CREAT | PERMS);
+	int sem_pitstop = semget(sem_pitstop_key, 11, IPC_CREAT | PERMS);	
 
 	int numPit = getPitstop(pilot->num);
 	// END INIT SECTION
@@ -67,18 +64,17 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 		} 
 		pilot->lnum = lap;
 		pilot->snum = i;
-		isDamaged = damaged();
-		//if(pilot->num < 10) printf("[Pilot 0%d] ", pilot->num);
-		//else printf("[Pilot %d] ", pilot->num);
+		if(!isDamaged) isDamaged = damaged();
+
 		if(isDamaged) pilot->crashed = crashed();
-		//printf("Damaged? %s", isDamaged ? "yes" : "no");
-		//printf(" | Crashed? %s", pilot->crashed ? "yes" : "no"); 
+
 		if(pilot->crashed) pilot->retired = true;
 		else
 		{
 			pilot->lapTimes[lap].tabSect[i].speed = speedWeather(weatherFactor, isDamaged);
 			pilot->lapTimes[lap].tabSect[i].stime = sectorTime(pilot->lapTimes[lap].tabSect[i].speed, i);
-			sleep(pilot->lapTimes[lap].tabSect[i].stime*0.05);
+
+			sleep(pilot->lapTimes[lap].tabSect[i].stime*0.1);
 			tireStatus = tireWear(tireStatus, weatherFactor);
 			if(!pilot->retired)
 			{
@@ -91,7 +87,7 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 						{
 							pilot->tires = pilot->tires - 1;
 							if (pilot->tires < 0) pilot->retired = true;
-							//printf(" | Tires out? %s", (pilot->tires < 0) ? "yes" : "no");
+
 							tireStatus = 100.0;
 							pitstopsleep += changeTime();
 						}
@@ -101,23 +97,34 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 							isDamaged = false;
 						}
 						pilot->pitstop = true;
-						sleep(pitstopsleep*0.05);
+						sleep(pitstopsleep*0.1);
 						pilot->lapTimes[lap].tabSect[i].stime += pitstopsleep;
 						// PITSTOP END
 					}
 				}
 			}
 		}
-		while(!isShMemReadable(sem_srv, numCell));
+		if(DISPMODE == 2){
+			if(pilot->num < 10) printf("[Pilot 0%d] ", pilot->num);
+			else printf("[Pilot %d] ", pilot->num);
+			printf("Damaged? %3s", isDamaged ? "yes" : "no");
+			printf(" | Crashed? %3s", pilot->crashed ? "yes" : "no"); 
+			if(lap < 10) printf(" | Lap 0%d", lap);
+			else printf(" | Lap %d", lap);
+			printf(" | Time Secor %d: %5.2lf", (i+1), pilot->lapTimes[lap].tabSect[i].stime); 
+			printf(" | Tires out? %3s", (pilot->tires < 0) ? "yes" : "no"); 
+			printf(" | Retired? %3s", pilot->retired ? "yes" : "no");
+			printf(" | Pitstop? %3s", pilot->pitstop ? "yes" : "no");
+			printf(" | PID: %d", getpid());
+			printf("\n");			
+		}
 		semDown(sem_race, numCell);
 		memcpy(&tabCar[numCell], pilot, sizeof(TCar)); // Put cell content into the shared memory
 		semUp(sem_race, numCell);
-
-		semUp(sem_modif, numCell); // Send to server signal of data change
+		semSwitch(sem_switch, numCell);
 		
 		if(pilot->retired) finished = true;
-		//printf(" | Retired? %s", pilot->retired ? "yes" : "no");
-		//printf("\n");
+
 		if(i==2)
 		{
 			if (checkSig(SIGEND, sem_control, 0)) finished = true;
@@ -126,10 +133,7 @@ void startRace(TCar *tabCar, int sem_race, int sem_modif, int numCell, TCar *pil
 	}
 	sendOver(tabCar, sem_race, numCell, pilot);
 	semReset(sem_race, numCell);
-	semReset(sem_modif, numCell);
-	semDown(sem_modif, numCell);
 	semctl(sem_pitstop, numPit, IPC_RMID, NULL);
-	semctl(sem_srv, numCell, IPC_RMID, NULL);
 }
 
 void pilot(int numCell, pid_t pid){	
@@ -140,11 +144,11 @@ void pilot(int numCell, pid_t pid){
 	key_t sem_control_key = ftok(PATH, CONTROL);
 	int sem_control = semget(sem_control_key, 2, IPC_CREAT | PERMS);
 
+	key_t sem_switch_key = ftok(PATH, SWITCH);
+	int sem_switch = semget(sem_switch_key, 22, IPC_CREAT | PERMS);
+
 	key_t sem_race_key = ftok(PATH, RACE);
 	int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS);
-
-	key_t sem_modif_key = ftok(PATH, MODIF);
-	int sem_modif = semget(sem_modif_key, 22, IPC_CREAT | PERMS);
 
 	key_t shm_race_key = ftok(PATH, RACESHM);
 	int shm_race = shmget(shm_race_key, 22*sizeof(TCar), S_IWUSR);
@@ -158,8 +162,7 @@ void pilot(int numCell, pid_t pid){
 	semDown(sem_race, numCell);
 	memcpy(&tabCar[numCell], &pilot, sizeof(TCar)); // Put cell content into the shared memory
 	semUp(sem_race, numCell);
-	semUp(sem_modif, numCell);
-
+	semSwitch(sem_switch, numCell);
 	do{
 		// Wait weather sig from server
 		while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 1);
@@ -167,17 +170,17 @@ void pilot(int numCell, pid_t pid){
 		int race = 0;
 		while((!((race >= SIGTR1) && (race <= SIGGP))) && (!checkSig(SIGEXIT, sem_control, 0))) race = getSig(sem_type, 0);
 		if(checkSig(SIGEXIT, sem_control, 0)) goto eop;
-		startRace(tabCar, sem_race, sem_modif, numCell, &pilot, sem_control, weather);
+		startRace(tabCar, sem_race, numCell, &pilot, sem_control, weather, sem_switch);
 	}while(!checkSig(SIGEXIT, sem_control, 0));
 	eop:
 		shmdt(&shm_race);
 		semctl(sem_type, 0, IPC_RMID, NULL);
 		semctl(sem_race, numCell, IPC_RMID, NULL);
-		semctl(sem_modif, numCell, IPC_RMID, NULL);
 		semctl(sem_control, 0, IPC_RMID, NULL);
 		semctl(sem_control, 1, IPC_RMID, NULL);
 		shmctl(shm_race, IPC_RMID, NULL);
-		exit(EXIT_SUCCESS);
+		semctl(sem_switch, numCell, IPC_RMID, NULL);
+		return;
 }
 
 bool crashed(){
@@ -257,7 +260,7 @@ double speedWeather(int weather, bool isDamaged){
 // Car speed and sector number as parameters
 // Calculates & returns sector time
 double sectorTime(double speed, int sector){
-    double mps = (((speed * 1000) / 60) / 60); // Speed in KPH (KM per Hour) to MPS (Meters per Second)
+    double mps = ((speed * 1000) / 3600); // Speed in KPH (KM per Hour) to MPS (Meters per Second)
     switch(sector)
     {
     	case 0: return (S1 / mps);
@@ -324,7 +327,7 @@ void sendReady(TCar *tabCar, int sem_race, int numCell, TCar *pilot)
 {
 	pilot->ready = true;
 	semDown(sem_race, numCell);
-	tabCar[numCell] = (*pilot);
+	memcpy(&tabCar[numCell], pilot, sizeof(TCar));
 	semUp(sem_race, numCell);
 }
 
@@ -332,7 +335,6 @@ void sendOver(TCar *tabCar, int sem_race, int numCell, TCar *pilot)
 {
 	pilot->ready = false;
 	semDown(sem_race, numCell);
-	tabCar[numCell] = (*pilot);
+	memcpy(&tabCar[numCell], pilot, sizeof(TCar));
 	semUp(sem_race, numCell);	
 }
-

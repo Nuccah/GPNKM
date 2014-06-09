@@ -29,11 +29,20 @@
 */
 #define LOGLVL 4 
 
+/* Change this to see different process at the screen:
+* 0 -> Monitor
+* 1 -> Server
+* 2 -> Drivers
+* Default is 1
+* Recommended level for prod is 0
+*/
+#define DISPMODE 1
+
 // Permission to Shared Memory
 #define PERMS 0666
 
 /* Sema Channel */
-#define DISP_READ 0
+#define SRV_SWITCH 0
 #define SRV_WRITE 1
 
 //MQ ID's

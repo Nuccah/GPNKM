@@ -8,22 +8,26 @@ void scoreMonitor(int sem_control, int type){
 	int sem_DispSrv = semget(sem_DispSrv_key, 2, IPC_CREAT | PERMS);
 	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
 	int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), S_IRUSR);
-	key_t sem_modifa_key = ftok(PATH, MODIFA); // Sema Key generated
-	int sem_modifa = semget(sem_modifa_key, 1, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
+
 	TSharedStock *listStock = (TSharedStock *) shmat(shm_DispSrv, NULL, 0); 
 	waitSig(SIGSTART, sem_control, 0);
 	printf("Run begins!!!\n\n");
 	bool finished = false;
+	int new_switch, old_switch = 1;
 	TSharedStock localStock;
 	do{
 		if(checkSig(SIGEND, sem_control, 0)) finished = true;
-		else{
-			if(isShMemReadable(sem_modifa, 0)){
-				semDown(sem_modifa,0);			
-				if(isShMemReadable(sem_DispSrv, 0)){
-					semDown(sem_DispSrv, DISP_READ);
+		else{	
+			new_switch = semGet(sem_DispSrv, SRV_SWITCH);	
+			if(new_switch != old_switch){
+				old_switch = new_switch;
+				int sswitch, sdrap;
+				do{
+					sdrap = semGet(sem_DispSrv, SRV_WRITE);
+					sswitch = semGet(sem_DispSrv, SRV_SWITCH);
 					memcpy(&localStock, listStock, sizeof(TSharedStock));
-					semUp(sem_DispSrv, DISP_READ);
+				}while((sdrap != 1) && (semGet(sem_DispSrv, SRV_WRITE) != 1) && (sswitch != semGet(sem_DispSrv, SRV_SWITCH)));
+				if(DISPMODE == 0){
 					int i;
 					system("clear");
 					for(i = 0; i < 22; i++){
@@ -31,12 +35,13 @@ void scoreMonitor(int sem_control, int type){
 						else printf("[%d] | ", i+1);
 						if(localStock.tabResult[i].num < 10) printf("[Driver 0%d] ", localStock.tabResult[i].num); 
 						else printf("[Driver %d] ", localStock.tabResult[i].num);
-						printf("lap: %2d | time: %6.2lf sec | ",
+						printf("lap: %2d | time: %10.2lf sec | ",
 								localStock.tabResult[i].lnum, localStock.tabResult[i].timeGlobal);
 						printf("Retired : %s", localStock.tabResult[i].retired ? "yes" : "no");
 						printf(" | Pitstop : %s\n", localStock.tabResult[i].pitstop ? "yes" : "no");
-					}
+					}					
 				}
+				sleep(1);
 			}
 		} 
 	}while(!finished);
@@ -45,7 +50,6 @@ void scoreMonitor(int sem_control, int type){
 	fflush(stdin);
 	printf("Press 0 to return to main menu...\n");
 	while(getchar() != '0') fflush(stdin);
-	semctl(sem_modifa, 0, IPC_RMID, NULL);
 	showMainMenu();
 }
 
@@ -126,7 +130,7 @@ void endOfProgram(int sem_control, int sem_type)
 	sendSig(SIGEXIT, sem_control, 0);
 
 	semctl(sem_type, 0, IPC_RMID, NULL);
-	semctl(sem_DispSrv, DISP_READ, IPC_RMID, NULL);
+	semctl(sem_DispSrv, SRV_SWITCH, IPC_RMID, NULL);
 	semctl(sem_DispSrv, SRV_WRITE, IPC_RMID, NULL);
 	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
 	int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), S_IRUSR | S_IWUSR);
@@ -150,7 +154,7 @@ void showMainMenu()
 	int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
 	
 	key_t sem_control_key = ftok(PATH, CONTROL);
-	int sem_control = semget(sem_control_key, 1, IPC_CREAT | PERMS);
+	int sem_control = semget(sem_control_key, 2, IPC_CREAT | PERMS);
 	int weather = 1;
 	
 	while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 1);	

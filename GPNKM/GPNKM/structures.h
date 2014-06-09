@@ -99,6 +99,11 @@ bool isShMemReadable(int sem_id, int sem_channel);
 
 // Reset the sema to 1
 void semReset(int sem_id, int sem_channel);
+// Return sem_channel of sem_id value
+int semGet(int sem_id, int sem_channel);
+
+// Switch sema between 1 and 0
+void semSwitch(int sem_id, int sem_channel);
 
 // sig = value to put in sema
 // Put a sig in the corresponding channel of the corresponding sema

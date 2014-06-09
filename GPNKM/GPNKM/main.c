@@ -11,15 +11,12 @@ int main (int argc, char *argv[])
 	int sem_control = semget(sem_control_key, 2, IPC_CREAT | PERMS);
 	semReset(sem_control, 0);
 	semReset(sem_control, 1);
-
-	key_t sem_modifa_key = ftok(PATH, MODIFA); // Sema Key generated
-	int sem_modifa = semget(sem_modifa_key, 1, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
-	semReset(sem_modifa, 0);
-
+	
+	
 	// Sema for control Shared Mem Stock
 	key_t sem_DispSrv_key = ftok(PATH, STOCK);
 	int sem_DispSrv = semget(sem_DispSrv_key, 2, IPC_CREAT | PERMS);
-	semReset(sem_DispSrv, DISP_READ);
+	semReset(sem_DispSrv, SRV_SWITCH);
 	semReset(sem_DispSrv, SRV_WRITE);
 
 	// Shared mem between monitor and server
@@ -44,17 +41,13 @@ int main (int argc, char *argv[])
 		//***********//
 		// Sema for control shared mem race
 		key_t sem_race_key = ftok(PATH, RACE); // Sema Key generated
-		key_t sem_modif_key = ftok(PATH, MODIF); // Sema Key generated
-		key_t sem_srv_key = ftok(PATH, SRV);
-        int sem_srv = semget(sem_srv_key, 22, IPC_CREAT | PERMS);
+		key_t sem_switch_key = ftok(PATH, SWITCH);
+		int sem_switch = semget(sem_switch_key, 22, IPC_CREAT | PERMS);
 		int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
-		int sem_modif = semget(sem_modif_key, 22, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
 		int i;
 		for(i = 0; i < 22; i++){
 			semReset(sem_race, i);
-			semReset(sem_modif, i);
-			semDown(sem_modif, i);	
-			semReset(sem_srv, i);
+			semReset(sem_switch, i);
 		}				
 		//*****************//
 		//*SHARED MEM INIT*//
@@ -77,15 +70,15 @@ int main (int argc, char *argv[])
 
 		for(i = 0; i < 22; i++){
 			semctl(sem_race, i, IPC_RMID, NULL);
-			semctl(sem_srv, i, IPC_RMID, NULL);
-			semctl(sem_modif, i, IPC_RMID, NULL);
+			semctl(sem_switch, i, IPC_RMID, NULL);
 		}
 		semctl(sem_type, 0, IPC_RMID, NULL);
 		semctl(sem_control, 0, IPC_RMID, NULL);
 		semctl(sem_control, 1, IPC_RMID, NULL);
-		semctl(sem_modifa, 0, IPC_RMID, NULL);
 		shmctl(shm_race, IPC_RMID, NULL);
 		shmctl(shm_DispSrv, IPC_RMID, NULL);
+		semctl(sem_DispSrv, SRV_WRITE, IPC_RMID, NULL);
+		semctl(sem_DispSrv, SRV_SWITCH, IPC_RMID, NULL);
 	}
 	return EXIT_SUCCESS;
 }

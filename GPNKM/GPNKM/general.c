@@ -29,6 +29,16 @@ bool isShMemReadable(int sem_id, int sem_channel){
 	return false;
 }
 
+// Return sem_channel of sem_id value
+int semGet(int sem_id, int sem_channel){
+	return semctl(sem_id, sem_channel, GETVAL);
+}
+
+// Switch sema between 1 and 0
+void semSwitch(int sem_id, int sem_channel){
+	if(semctl(sem_id, sem_channel, GETVAL) == 1) semDown(sem_id, sem_channel);
+	else semUp(sem_id, sem_channel);
+}
 
 // sig = value to put in sema
 // Put a sig in the corresponding channel of the corresponding sema
