@@ -32,14 +32,14 @@ void server(){
 	TSharedStock *listStock = (TSharedStock *) shmat(shm_DispSrv, NULL, 0);
 
 	key_t shm_race_key = ftok(PATH, RACESHM);
-	int shm_race = shmget(shm_race_key, 22*sizeof(TCar), S_IRUSR);
-	TCar *tabCar = (TCar *) shmat(shm_race, NULL, 0);
+	int shm_race = shmget(shm_race_key, 22*sizeof(TTabCar), S_IRUSR);
+	TTabCar *tabCar = (TTabCar *) shmat(shm_race, NULL, 0);
     
 	show_success("Server", "Initialisation complete");
 	// END INIT SECTION
 	do{
 		int i = 0, j;
-		TCar tabRead[22];
+		TTabCar tabRead[22];
 
 	    // Send weather to monitor and pilots
 		sendSig(randomWeather(), sem_control, 1);
@@ -70,7 +70,7 @@ void server(){
 				do{
 					sswitch = semGet(sem_switch, i);
 					sdrap = semGet(sem_race, i);
-					memcpy(&tabRead[i], &tabCar[i], sizeof(TCar));
+					memcpy(&tabRead[i], &tabCar[i], sizeof(TTabCar));
 				} while((sdrap != 1) && (semGet(sem_race, i) != 1) && (sswitch != semGet(sem_switch, i)));
 				localStock.tabResult[i].teamName = tabRead[i].teamName;
 				localStock.tabResult[i].num = tabRead[i].num;

@@ -53,7 +53,7 @@ int main (int argc, char *argv[])
 		//*SHARED MEM INIT*//
 		//*****************//
 		key_t shm_race_key = ftok(PATH, RACESHM);
-		int shm_race = shmget(shm_race_key, 22*sizeof(TCar), IPC_CREAT | PERMS); // Creation Race Shared Memory
+		int shm_race = shmget(shm_race_key, 22*sizeof(TTabCar), IPC_CREAT | PERMS); // Creation Race Shared Memory
 
 		//***********//
 		//*PIPE INIT*//

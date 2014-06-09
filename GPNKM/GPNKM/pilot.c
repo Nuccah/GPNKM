@@ -27,7 +27,7 @@ int forkPilots(){
 	exit(EXIT_SUCCESS);
 }
 
-void startRace(TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_control, int weatherFactor, int sem_switch)
+void startRace(TTabCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_control, int weatherFactor, int sem_switch)
 {
 	// INIT SECTION
 	key_t sem_pitstop_key = ftok(PATH, PIT);
@@ -47,7 +47,7 @@ void startRace(TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_con
 	pilot->retired = false;
 	pilot->pitstop = false;
 	pilot->lnum = 0;
-	pilot->avgSpeed = 0.0;
+	TSect run;
 	double pitstopsleep = 0.0;
 	double tireStatus = 100.0;
 	while(!finished)
@@ -71,10 +71,10 @@ void startRace(TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_con
 		if(pilot->crashed) pilot->retired = true;
 		else
 		{
-			pilot->lapTimes[lap].tabSect[i].speed = speedWeather(weatherFactor, isDamaged);
-			pilot->lapTimes[lap].tabSect[i].stime = sectorTime(pilot->lapTimes[lap].tabSect[i].speed, i);
+			run.speed = speedWeather(weatherFactor, isDamaged);
+			run.stime = sectorTime(run.speed, i);
 
-			sleep(pilot->lapTimes[lap].tabSect[i].stime*0.03);
+			sleep(run.stime*0.03);
 			tireStatus = tireWear(tireStatus, weatherFactor);
 			if(!pilot->retired)
 			{
@@ -98,7 +98,7 @@ void startRace(TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_con
 						}
 						pilot->pitstop = true;
 						sleep(pitstopsleep*0.03);
-						pilot->lapTimes[lap].tabSect[i].stime += pitstopsleep;
+						run.stime += pitstopsleep;
 						// PITSTOP END
 					}
 				}
@@ -111,7 +111,7 @@ void startRace(TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_con
 			printf(" | Crashed? %3s", pilot->crashed ? "yes" : "no"); 
 			if(lap < 10) printf(" | Lap 0%d", lap);
 			else printf(" | Lap %d", lap);
-			printf(" | Time Secor %d: %5.2lf", (i+1), pilot->lapTimes[lap].tabSect[i].stime); 
+			printf(" | Time Secor %d: %5.2lf", (i+1), run.stime); 
 			printf(" | Tires out? %3s", (pilot->tires < 0) ? "yes" : "no"); 
 			printf(" | Retired? %3s", pilot->retired ? "yes" : "no");
 			printf(" | Pitstop? %3s", pilot->pitstop ? "yes" : "no");
@@ -121,7 +121,7 @@ void startRace(TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_con
 		semDown(sem_race, numCell);
 		memcpy(&tabCar[numCell].snum, &pilot->snum, sizeof(int));
 		memcpy(&tabCar[numCell].lnum, &pilot->lnum, sizeof(int));
-		memcpy(&tabCar[numCell].lapTimes[lap].tabSect[i].stime, &pilot->lapTimes[lap].tabSect[i].stime, sizeof(double));
+		memcpy(&tabCar[numCell].lapTimes[lap].tabSect[i], &run, sizeof(double));
 		memcpy(&tabCar[numCell].retired, &pilot->retired, sizeof(bool));
 		memcpy(&tabCar[numCell].pitstop, &pilot->pitstop, sizeof(bool));
 		semUp(sem_race, numCell);
@@ -155,8 +155,8 @@ void pilot(int numCell, pid_t pid){
 	int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS);
 
 	key_t shm_race_key = ftok(PATH, RACESHM);
-	int shm_race = shmget(shm_race_key, 22*sizeof(TCar), S_IWUSR);
-	TCar *tabCar = (TCar *)shmat(shm_race, NULL, 0);
+	int shm_race = shmget(shm_race_key, 22*sizeof(TTabCar), S_IWUSR);
+	TTabCar *tabCar = (TTabCar *)shmat(shm_race, NULL, 0);
 	// END INIT SECTION
 	int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
 	int weather = 1;
@@ -328,18 +328,18 @@ void exitPitstop(int numPit, int sem_pitstop)
 	semUp(sem_pitstop, numPit);
 }
 
-void sendReady(TCar *tabCar, int sem_race, int numCell, TCar *pilot)
+void sendReady(TTabCar *tabCar, int sem_race, int numCell, TCar *pilot)
 {
 	pilot->ready = true;
 	semDown(sem_race, numCell);
-	memcpy(&tabCar[numCell], pilot, sizeof(TCar));
+	memcpy(&tabCar[numCell].ready, &pilot->ready, sizeof(bool));
 	semUp(sem_race, numCell);
 }
 
-void sendOver(TCar *tabCar, int sem_race, int numCell, TCar *pilot)
+void sendOver(TTabCar *tabCar, int sem_race, int numCell, TCar *pilot)
 {
 	pilot->ready = false;
 	semDown(sem_race, numCell);
-	memcpy(&tabCar[numCell], pilot, sizeof(TCar));
+	memcpy(&tabCar[numCell].ready, &pilot->ready, sizeof(bool));
 	semUp(sem_race, numCell);	
 }

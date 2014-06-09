@@ -19,9 +19,9 @@ double sectorTime(double speed, int sector);
 double pitTime();
 double changeTime();
 double repairTime();
-void sendReady(TCar *tabCar, int sem_race, int numCell, TCar *pilot);
-void sendOver(TCar *tabCar, int sem_race, int numCell, TCar *pilot);
-void startRace(TCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_start, int weatherFactor, int sem_switch);
+void sendReady(TTabCar *tabCar, int sem_race, int numCell, TCar *pilot);
+void sendOver(TTabCar *tabCar, int sem_race, int numCell, TCar *pilot);
+void startRace(TTabCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_start, int weatherFactor, int sem_switch);
 void pilot(int numCell, pid_t pid);
 
 

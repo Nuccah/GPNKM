@@ -34,9 +34,22 @@ typedef struct TCar {
 	int snum;
 	int lnum;
 	int tires; /* sets of tires */
+} TCar;
+
+/* car type */
+typedef struct TTabCar {
+	const char * teamName;
+	bool retired; /* is retired (true) */
+	bool crashed; /* is crashed (true) */
+	bool pitstop;
+	bool ready;
+	int num;
+	int start_position; 
+	int snum;
+	int lnum;
 	double avgSpeed; /* Average speed in real time */
 	TLap lapTimes[150]; /* it's a pointer because laps number depends of the race type (I suppose ^^) */
-} TCar;
+} TTabCar;
  
 //TODO complete all the race types!
 /* Trial type */
