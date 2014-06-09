@@ -119,7 +119,7 @@ void startRace(TTabCar *tabCar1, TTabCar *tabCar2, TTabCar *tabCar3, int sem_rac
 			printf(" | PID: %d", getpid());
 			printf("\n");			
 		}
-		semSet(sem_race, numCell, 0);
+		semDown(sem_race, numCell);
 		memcpy(&tabCar1[numCell].snum, &pilot->snum, sizeof(int));
 		memcpy(&tabCar1[numCell].lnum, &pilot->lnum, sizeof(int));
 		memcpy(&tabCar1[numCell].lapTimes[lap].tabSect[i].stime, &run.stime, sizeof(double));
@@ -127,7 +127,7 @@ void startRace(TTabCar *tabCar1, TTabCar *tabCar2, TTabCar *tabCar3, int sem_rac
 		memcpy(&tabCar1[numCell].retired, &pilot->retired, sizeof(bool));
 		memcpy(&tabCar1[numCell].pitstop, &pilot->pitstop, sizeof(bool));
 		semSwitch(sem_switch, numCell);
-		semSet(sem_race, numCell, 1);
+		semUp(sem_race, numCell);
 		if(semGet(sem_ecr, numCell) != semGet(sem_lect, numCell)){
 			memcpy(&tabCar2[numCell].snum, &pilot->snum, sizeof(int));
 			memcpy(&tabCar2[numCell].lnum, &pilot->lnum, sizeof(int));
@@ -195,11 +195,11 @@ void pilot(int numCell, pid_t pid){
 	TCar pilot;
 	pilot.num = drivers[numCell];
 	pilot.teamName = getTeamName(pilot.num); 
-	semSet(sem_race, numCell, 0);
+	semDown(sem_race, numCell);
 	memcpy(&tabCar1[numCell].num, &pilot.num, sizeof(int)); 
 	memcpy(&tabCar1[numCell].teamName, &pilot.teamName, sizeof(const char *));
 	semSwitch(sem_switch, numCell);
-	semSet(sem_race, numCell, 1);
+	semUp(sem_race, numCell);
 	if(semGet(sem_lect, numCell) != semGet(sem_ecr, numCell)){
 		memcpy(&tabCar2[numCell].num, &pilot.num, sizeof(int)); 
 		memcpy(&tabCar2[numCell].teamName, &pilot.teamName, sizeof(const char *));
@@ -216,11 +216,11 @@ void pilot(int numCell, pid_t pid){
 		if(checkSig(SIGEXIT, sem_control, 0)) goto eop;
 		pilot.lnum = 0;
 		pilot.snum = 0;
-		semSet(sem_race, numCell, 0);
+		semDown(sem_race, numCell);
 		memcpy(&tabCar1[numCell].lnum, &pilot.lnum, sizeof(int));
 		memcpy(&tabCar1[numCell].snum, &pilot.snum, sizeof(int));
 		semSwitch(sem_switch, numCell);
-		semSet(sem_race, numCell, 1);
+		semUp(sem_race, numCell);
 		if(semGet(sem_lect, numCell) != semGet(sem_ecr, numCell)){
 			memcpy(&tabCar2[numCell].lnum, &pilot.lnum, sizeof(int));
 			memcpy(&tabCar2[numCell].snum, &pilot.snum, sizeof(int));
