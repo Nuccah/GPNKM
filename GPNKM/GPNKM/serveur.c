@@ -203,8 +203,8 @@ void server(){
 						memcpy(&listStock->tabResult[k].timeGlobal, &localStock.tabResult[k].timeGlobal, sizeof(double));
 						memcpy(&listStock->tabResult[k].lnum, &localStock.tabResult[k].lnum, sizeof(int));
 						memcpy(&listStock->tabResult[k].snum, &localStock.tabResult[k].snum, sizeof(int));
-						semUp(sem_DispSrv, SRV_WRITE);
 						semSwitch(sem_DispSrv, SRV_SWITCH);
+						semUp(sem_DispSrv, SRV_WRITE);
 					}
 				}
 				if(type == SIGGP) currentLap++;
@@ -214,10 +214,19 @@ void server(){
 		end: // Terminate GP and send all last informations to monitor
 			sendSig(SIGEND, sem_control, 0);
 	    next:
-	    	show_success("Server", "Race terminated!");
 	    	sendSig(SIGEND, sem_control, 0);
 	    	int s;
+	    	show_notice("Server", "Waiting last drivers informations and end of run");
+	    	for(s=0; s<22; s++){
+	    		int sswitch, sdrap;
+				do{
+					sdrap = semGet(sem_race, k);
+					sswitch = semGet(sem_switch, k);
+					memcpy(&tabRead[s].ready, &tabCar[s].ready, sizeof(bool));
+				}while(tabRead[k].ready && (sdrap != 1) && (semGet(sem_race, k) != 1) && (sswitch != semGet(sem_switch, k)));
+	    	}
 	    	for(s=0;s<22;s++) semReset(sem_race, s);
+	    	show_success("Server", "Race terminated!");
 	}while(!checkSig(SIGEXIT, sem_control, 0));
 	eop:
 		shmdt(&shm_race);

@@ -124,8 +124,8 @@ void startRace(TTabCar *tabCar, int sem_race, int numCell, TCar *pilot, int sem_
 		memcpy(&tabCar[numCell].lapTimes[lap].tabSect[i], &run, sizeof(double));
 		memcpy(&tabCar[numCell].retired, &pilot->retired, sizeof(bool));
 		memcpy(&tabCar[numCell].pitstop, &pilot->pitstop, sizeof(bool));
-		semUp(sem_race, numCell);
 		semSwitch(sem_switch, numCell);
+		semUp(sem_race, numCell);
 		
 		if(pilot->retired) finished = true;
 
