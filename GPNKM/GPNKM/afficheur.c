@@ -5,7 +5,7 @@ void scoreMonitor(int sem_control, int type){
 	key_t sem_type_key = ftok(PATH, TYPE);
 	int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
 	key_t sem_DispSrv_key = ftok(PATH, STOCK);
-	int sem_DispSrv = semget(sem_DispSrv_key, 2, IPC_CREAT | PERMS);
+	int sem_DispSrv = semget(sem_DispSrv_key, 1, IPC_CREAT | PERMS);
 	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
 	int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), S_IRUSR);
 
@@ -13,7 +13,7 @@ void scoreMonitor(int sem_control, int type){
 	waitSig(SIGSTART, sem_control, 0);
 	printf("Run begins!!!\n\n");
 	bool finished = false;
-	int new_switch, old_switch = 1, k, i;
+	int k, i;
 	TSharedStock localStock;
 	for(i = 0; i < 22; i++){
 		localStock.tabResult[i].timeGlobal = 0.0;
@@ -23,41 +23,36 @@ void scoreMonitor(int sem_control, int type){
 	}
 	do{
 		if(checkSig(SIGEND, sem_control, 0)) finished = true;
-		else{	
-			new_switch = semGet(sem_DispSrv, SRV_SWITCH);	
-			if(new_switch != old_switch){
-				old_switch = new_switch;
-				int sswitch, sdrap;
-				do{
-					sdrap = semGet(sem_DispSrv, SRV_WRITE);
-					sswitch = semGet(sem_DispSrv, SRV_SWITCH);
-					for(k=0; k<22; k++){
-						memcpy(&localStock.tabResult[k].retired, &listStock->tabResult[k].retired, sizeof(bool));
-						memcpy(&localStock.tabResult[k].pitstop, &listStock->tabResult[k].pitstop, sizeof(bool));
-						memcpy(&localStock.tabResult[k].timeLastLap, &listStock->tabResult[k].timeLastLap, sizeof(double));
-						memcpy(&localStock.tabResult[k].timeGlobal, &listStock->tabResult[k].timeGlobal, sizeof(double));
-						memcpy(&localStock.tabResult[k].lnum, &listStock->tabResult[k].lnum, sizeof(int));
-						memcpy(&localStock.tabResult[k].snum, &listStock->tabResult[k].snum, sizeof(int));
-						memcpy(&localStock.tabResult[k].teamName, &listStock->tabResult[k].teamName, sizeof(char *));
-						memcpy(&localStock.tabResult[k].num, &listStock->tabResult[k].num, sizeof(int));
-					}
-				}while((sdrap != 1) && (semGet(sem_DispSrv, SRV_WRITE) != 1) && (sswitch != semGet(sem_DispSrv, SRV_SWITCH)));
-				if(DISPMODE == 0){
-					qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpfunct);
-					int i;
-					system("clear");
-					for(i = 0; i < 22; i++){
-						if((i+1) < 10) printf("[0%d] | ", i+1);
-						else printf("[%d] | ", i+1);
-						if(localStock.tabResult[i].num < 10) printf("[Driver 0%d] ", localStock.tabResult[i].num); 
-						else printf("[Driver %d] ", localStock.tabResult[i].num);
-						printf("lap: %3d | time: %10.2lf sec | ",
-								localStock.tabResult[i].lnum, localStock.tabResult[i].timeGlobal);
-						printf("Retired : %3s", localStock.tabResult[i].retired ? "yes" : "no");
-						printf(" | Pitstop : %3s\n", localStock.tabResult[i].pitstop ? "yes" : "no");
-					}					
-				}
+		else{
+			for(k=0; k<22; k++){
+				while(semGet(sem_DispSrv, 0)  != 1);
+				semDown(sem_DispSrv, 0);
+				memcpy(&localStock.tabResult[k].retired, &listStock->tabResult[k].retired, sizeof(bool));
+				memcpy(&localStock.tabResult[k].pitstop, &listStock->tabResult[k].pitstop, sizeof(bool));
+				memcpy(&localStock.tabResult[k].timeLastLap, &listStock->tabResult[k].timeLastLap, sizeof(double));
+				memcpy(&localStock.tabResult[k].timeGlobal, &listStock->tabResult[k].timeGlobal, sizeof(double));
+				memcpy(&localStock.tabResult[k].lnum, &listStock->tabResult[k].lnum, sizeof(int));
+				memcpy(&localStock.tabResult[k].snum, &listStock->tabResult[k].snum, sizeof(int));
+				memcpy(&localStock.tabResult[k].teamName, &listStock->tabResult[k].teamName, sizeof(char *));
+				memcpy(&localStock.tabResult[k].num, &listStock->tabResult[k].num, sizeof(int));
+				semUp(sem_DispSrv, 0);
 			}
+			if(DISPMODE == 0){
+				qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpfunct);
+				int i;
+				system("clear");
+				for(i = 0; i < 22; i++){
+					if((i+1) < 10) printf("[0%d] | ", i+1);
+					else printf("[%d] | ", i+1);
+					if(localStock.tabResult[i].num < 10) printf("[Driver 0%d] ", localStock.tabResult[i].num); 
+					else printf("[Driver %d] ", localStock.tabResult[i].num);
+					printf("lap: %3d | time: %10.2lf sec | ",
+							localStock.tabResult[i].lnum, localStock.tabResult[i].timeGlobal);
+					printf("Retired : %3s", localStock.tabResult[i].retired ? "yes" : "no");
+					printf(" | Pitstop : %3s\n", localStock.tabResult[i].pitstop ? "yes" : "no");
+				}					
+			}
+			sleep(1);
 		} 
 	}while(!finished);
 	shmdt(&shm_DispSrv);
@@ -141,12 +136,11 @@ void showQualifMenu(int sem_control,  int sem_type)
 void endOfProgram(int sem_control, int sem_type)
 {
 	key_t sem_DispSrv_key = ftok(PATH, STOCK);
-	int sem_DispSrv = semget(sem_DispSrv_key, 2, IPC_CREAT | PERMS);
+	int sem_DispSrv = semget(sem_DispSrv_key, 1, IPC_CREAT | PERMS);
 	sendSig(SIGEXIT, sem_control, 0);
-
+	sleep(1);
 	semctl(sem_type, 0, IPC_RMID, NULL);
-	semctl(sem_DispSrv, SRV_SWITCH, IPC_RMID, NULL);
-	semctl(sem_DispSrv, SRV_WRITE, IPC_RMID, NULL);
+	semctl(sem_DispSrv, 0, IPC_RMID, NULL);
 	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
 	int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), S_IRUSR | S_IWUSR);
 	shmctl(shm_DispSrv, IPC_RMID, NULL);

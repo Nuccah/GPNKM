@@ -48,7 +48,7 @@ typedef struct TTabCar {
 	int snum;
 	int lnum;
 	double avgSpeed; /* Average speed in real time */
-	TLap lapTimes[150]; /* it's a pointer because laps number depends of the race type (I suppose ^^) */
+	TLap lapTimes[300]; /* it's a pointer because laps number depends of the race type (I suppose ^^) */
 } TTabCar;
  
 //TODO complete all the race types!
@@ -116,8 +116,6 @@ void semReset(int sem_id, int sem_channel);
 int semGet(int sem_id, int sem_channel);
 // Set sem_channel of sem_id at val
 void semSet(int sem_id, int sem_channel, int val);
-// Switch sema between 1 and 0
-void semSwitch(int sem_id, int sem_channel);
 
 // sig = value to put in sema
 // Put a sig in the corresponding channel of the corresponding sema

@@ -37,11 +37,7 @@
 #define RACE 12
 #define STOCK 13
 #define PIT 14
-#define MODIF 15
-#define MODIFA 25
-#define SRV 26
-#define SWITCH 50
-#define SWDISPSRV 28
+#define MUTEX 30
 
 #define RACESHM 100
 #define STOCKSHM 23

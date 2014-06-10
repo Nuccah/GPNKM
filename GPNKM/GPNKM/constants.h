@@ -42,12 +42,7 @@
 #define PERMS 0666
 
 /* Sema Channel */
-#define SRV_SWITCH 0
-#define SRV_WRITE 1
-
-//MQ ID's
-#define SERVER 100
-#define ADR 101
+#define TMP1 0
 
 /* GENERAL */
 #define DRIVERS 22

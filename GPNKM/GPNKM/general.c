@@ -39,12 +39,6 @@ void semSet(int sem_id, int sem_channel, int val){
 	semctl(sem_id, sem_channel, SETVAL, val);
 }
 
-// Switch sema between 1 and 0
-void semSwitch(int sem_id, int sem_channel){
-	if(semctl(sem_id, sem_channel, GETVAL) == 1) semDown(sem_id, sem_channel);
-	else semUp(sem_id, sem_channel);
-}
-
 // sig = value to put in sema
 // Put a sig in the corresponding channel of the corresponding sema
 void sendSig(int sig, int sem_id, int sem_channel){
