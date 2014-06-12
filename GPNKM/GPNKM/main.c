@@ -28,11 +28,14 @@ int main (int argc, char *argv[])
 	}
 
 	//Afficheur (Parent)//
-	else if (process_id > 0) showMainMenu();
+	else if (process_id > 0){
+		int level = 0;
+		showMainMenu(level);
+	} 
 	/*Tampon Serveur (Child)*/
 	else{
 		// DAEMON CODE START //
-		daemonize();
+		//daemonize();
 		// PROCESS NOW A DAEMON //
 		//***********//
 		//*SEMA INIT*//

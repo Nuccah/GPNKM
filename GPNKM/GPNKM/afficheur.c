@@ -1,6 +1,6 @@
 #include "afficheur.h"
 
-void scoreMonitor(int sem_control, int type){
+void scoreMonitor(int sem_control, int type, int level){
 	// INIT SECTION
 	key_t sem_type_key = ftok(PATH, TYPE);
 	int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
@@ -11,7 +11,16 @@ void scoreMonitor(int sem_control, int type){
 
 	TSharedStock *listStock = (TSharedStock *) shmat(shm_DispSrv, NULL, 0); 
 	waitSig(SIGSTART, sem_control, 0);
-	show_notice("Monitor", "Run begins!!!");
+	if(level == 6){
+		show_notice("Monitor", "Grand Prix will begin in 3!!!");
+		sleep(1); system("clear");
+		show_notice("Monitor", "Grand Prix will begin in 2!!!");
+		sleep(1); system("clear");
+		show_notice("Monitor", "Grand Prix will begin in 1!!!");
+	}
+	else if(level < 3) show_notice("Monitor", "Trial Runs will begin in 1!!!");
+	else show_notice("Monitor", "Qualifier Runs will begin in 1!!!");
+	sleep(1);
 	bool finished = false;
 	int k, i;
 	TSharedStock localStock;
@@ -53,91 +62,109 @@ void scoreMonitor(int sem_control, int type){
 	fflush(stdin);
 	printf("Press 0 to return to main menu...\n");
 	while(getchar() != '0') fflush(stdin);
-	showMainMenu();
+	level++;
+	showMainMenu(level);
 }
 
-void showTRMenu(int sem_control, int sem_type){
+void showTRMenu(int sem_control, int sem_type, int level){
 	system ( "clear" );
+	fflush(stdin);
 	printf("\033[36m");
 	printf ("Trial Runs!\n");
 	printf ("-------------------------------------\n\n");
-	printf ("1 : Begin Trial Run 1\n");
-	printf ("2 : Begin Trial Run 2\n");
-	printf ("3 : Begin Trial Run 3\n");
-	printf ("4 : Show Results of Trial Runs\n");
+	if (level == 0) printf ("1 : Begin Trial Run 1\n");
+	if (level == 1) printf ("2 : Begin Trial Run 2\n");
+	if (level == 2) printf ("3 : Begin Trial Run 3\n");
 	printf ("0 : Back\n");
 	printf ("-------------------------------------\033[0m \n\n");
 	switch(getchar())
 	{
-		case '1' : show_notice("Monitor", "Trial 1 is going to begin");
-				   sendSig(SIGTR1, sem_type, 0);
-				   scoreMonitor(sem_control, SIGTR1);
-				   break;
-		case '2' : show_notice("Monitor", "Trial 2 is going to begin");
-				   sendSig(SIGTR2, sem_type, 0);
-				   scoreMonitor(sem_control, SIGTR2);
-				   break;
-		case '3' : show_notice("Monitor", "Trial 3 is going to begin");
-				   sendSig(SIGTR3, sem_type, 0);
-				   scoreMonitor(sem_control, SIGTR3);
-				   break;
-		case '4' : printf("Show Results\n"); break;
+		case '1' :
+				fflush(stdin); 
+				if (level == 3){
+					show_notice("Monitor", "Trial 1 is going to begin");
+				    sendSig(SIGTR1, sem_type, 0);
+				    scoreMonitor(sem_control, SIGTR1, level);
+				    break;
+				}
+		case '2' : 
+				fflush(stdin);
+				if (level == 3){
+					show_notice("Monitor", "Trial 2 is going to begin");
+				    sendSig(SIGTR2, sem_type, 0);
+				    scoreMonitor(sem_control, SIGTR2, level);
+				    break;
+				}
+		case '3' : 
+				fflush(stdin);
+				if (level == 3){
+					show_notice("Monitor", "Trial 3 is going to begin");
+				    sendSig(SIGTR3, sem_type, 0);
+				    scoreMonitor(sem_control, SIGTR3, level);
+				    break;
+				}
 		case '0' : 
 			fflush(stdin);
-			showMainMenu(); 
+			showMainMenu(level); 
 			break;
 		default  : 
 			fflush(stdin);
-			showTRMenu(sem_control, sem_type); 
+			showTRMenu(sem_control, sem_type, level); 
 			break;
 	}
 }
 
-void showQualifMenu(int sem_control,  int sem_type){
+void showQualifMenu(int sem_control, int sem_type, int level){
 	system ( "clear" );
+	fflush(stdin);
 	printf("\033[36m");
 	printf ("Welcome to the worldest famous GPNKM!\n");
 	printf ("-------------------------------------\n\n");
-	printf ("1 : Begin Qualifier 1\n");
-	printf ("2 : Begin Qualifier 2\n");
-	printf ("3 : Begin Qualifier 3\n");
-	printf ("4 : Show Results of Qualification Runs\n");
+	if (level == 3) printf ("1 : Begin Qualifier 1\n");
+	if (level == 4) printf ("2 : Begin Qualifier 2\n");
+	if (level == 5) printf ("3 : Begin Qualifier 3\n");
 	printf ("0 : Back\n");
 	printf ("-------------------------------------\033[0m \n\n");
 	switch(getchar())
 	{
-		case '1' : show_notice("Monitor", "Qualification 1 is going to begin");
-				   sendSig(SIGQU1, sem_type, 0);
-				   scoreMonitor(sem_control, SIGQU1);
-				   break;
-		case '2' : show_notice("Monitor", "Qualification 1 is going to begin");
-				   sendSig(SIGQU2, sem_type, 0);
-				   scoreMonitor(sem_control, SIGQU2);
-				   break;;
-		case '3' : show_notice("Monitor", "Qualification 1 is going to begin");
-				   sendSig(SIGQU3, sem_type, 0);
-				   scoreMonitor(sem_control, SIGQU3);
-				   break;
-		case '4' : printf("Show Results of Qualifiers\n"); break;
+		case '1' :
+				if (level == 3){
+					show_notice("Monitor", "Qualification 1 is going to begin");
+				   	sendSig(SIGQU1, sem_type, 0);
+				   	scoreMonitor(sem_control, SIGQU1, level);
+				  	break;
+				}	
+		case '2' : 
+				if (level == 4){
+					show_notice("Monitor", "Qualification 1 is going to begin");
+					sendSig(SIGQU2, sem_type, 0);
+					scoreMonitor(sem_control, SIGQU2, level);
+					break;
+				}
+		case '3' : 
+				if (level == 5){
+					show_notice("Monitor", "Qualification 1 is going to begin");
+					sendSig(SIGQU3, sem_type, 0);
+					scoreMonitor(sem_control, SIGQU3, level);
+					break;
+				}
 		case '0' : 
-			fflush(stdin);
-			showMainMenu(); 
+			showMainMenu(level); 
 			break;
 		default  :
-			fflush(stdin); 
-			showQualifMenu(sem_control, sem_type); 
+			showQualifMenu(sem_control, sem_type, level); 
 			break;
 	} 
 }
 
-void showMainMenu(){
+void showMainMenu(int level){
+	fflush(stdin);
 	key_t sem_type_key = ftok(PATH, TYPE);
 	int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
 	
 	key_t sem_control_key = ftok(PATH, CONTROL);
 	int sem_control = semget(sem_control_key, 2, IPC_CREAT | PERMS);
 	int weather = 1;
-	
 	while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 1);	
 
 	system ( "clear" );
@@ -145,9 +172,9 @@ void showMainMenu(){
 	printf ("Welcome to the worldest famous GPNKM!\n");
 	weatherMsg(weather);
 	printf ("-------------------------------------\n\n");
-	printf ("1 : Begin Test Runs\n");
-	printf ("2 : Begin Qualifiers\n");
-	printf ("3 : Begin Grand Prix\n");
+	if (level < 3) printf ("1 : Begin Test Runs\n");
+	if (level > 2 && level < 6) printf ("2 : Begin Qualifiers\n");
+	if (level == 6) printf ("3 : Begin Grand Prix\n");
 	printf ("4 : Show Results of Grand Prix\n");
 	printf ("5 : Restart Grand Prix\n");
 	printf ("0 : Exit\n");
@@ -155,23 +182,27 @@ void showMainMenu(){
 	switch(getchar())
 	{
 		case '1' : 
-				fflush(stdin);
-				showTRMenu(sem_control, sem_type); 
-				break;
+				if(level < 3){
+					showTRMenu(sem_control, sem_type, level); 
+					break;
+				}
 		case '2' : 
-				fflush(stdin);
-				showQualifMenu(sem_control, sem_type); 
-				break;
-		case '3' : show_notice("Monitor", "Grand Prix is going to begin");
-				   sendSig(SIGGP, sem_type, 0);
-				   scoreMonitor(sem_control, SIGGP);
-				   break;
+				if(level > 2 && level < 6){
+					showQualifMenu(sem_control, sem_type, level);
+					break;
+				}	 
+		case '3' : 
+				if(level == 6){
+					show_notice("Monitor", "Grand Prix is going to begin");
+			   		sendSig(SIGGP, sem_type, 0);
+			   		scoreMonitor(sem_control, SIGGP, level);
+			   		break;
+				}   	
 		case '4' : printf("Show Results\n"); break;
 		case '5' : printf("Restart Grand Prix\n"); break;
 		case '0' : endOfProgram(sem_control, sem_type); break;
 		default  : 
-			fflush(stdin);
-			showMainMenu(); 
+			showMainMenu(level); 
 			break;
 	}
 }
