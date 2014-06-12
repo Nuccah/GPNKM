@@ -55,11 +55,6 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 	int tmpLap = 0;
 	while(!finished)
 	{
-		if(pilot->pitstop == true) 
-		{
-			pilot->pitstop = false;
-			exitPitstop(numPit, sem_pitstop);
-		}
 		if(i == 3)
 		{
 			i = 0;
@@ -101,8 +96,14 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 							isDamaged = false;
 						}
 						pilot->pitstop = true;
+						while((semGet(sem_mutex, TMP1) != 1));
+						semDown(sem_mutex, TMP1);
+						memcpy(&tabCar[numCell].pitstop, &pilot->pitstop, sizeof(bool));
+						semUp(sem_mutex, TMP1);
 						usleep(sectorSleep(pitstopsleep,0.2));
 						run.stime += pitstopsleep;
+						pilot->pitstop = false;
+						exitPitstop(numPit, sem_pitstop);
 						// PITSTOP END
 					}
 				}
