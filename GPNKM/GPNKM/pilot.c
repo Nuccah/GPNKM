@@ -28,11 +28,11 @@ int forkPilots(){
 }
 
 void startRace(TTabCar *tabCar, int numCell, TCar *pilot, 
-				int sem_control, int weatherFactor, int sem_mutex)
+				int sem_control, int weatherFactor, int sem_mutex, int sem_race)
 {
 	// INIT SECTION
 	key_t sem_pitstop_key = ftok(PATH, PIT);
-	int sem_pitstop = semget(sem_pitstop_key, 11, IPC_CREAT | PERMS);	
+	int sem_pitstop = semget(sem_pitstop_key, 11, IPC_CREAT | PERMS);
 
 	int numPit = getPitstop(pilot->num);
 	// END INIT SECTION
@@ -51,6 +51,7 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 	TSect run;
 	double pitstopsleep = 0.0;
 	double tireStatus = 100.0;
+	double global = 0.0;
 	int tmpLap = 0;
 	while(!finished)
 	{
@@ -108,13 +109,15 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 			}
 		}
 		if(DISPMODE == 2){
+			global += run.stime;
 			if(pilot->num < 10) printf("[Pilot 0%d] ", pilot->num);
 			else printf("[Pilot %d] ", pilot->num);
 			printf("Damaged? %3s", isDamaged ? "yes" : "no");
 			printf(" | Crashed? %3s", pilot->crashed ? "yes" : "no"); 
 			if(lap < 10) printf(" | Lap 0%d", lap);
 			else printf(" | Lap %d", lap);
-			printf(" | Time Secor %d: %5.2lf", (i+1), run.stime); 
+			printf(" | Time Secor %d: %5.2lf", (i+1), run.stime);
+			printf(" | Global Time: %10.2lf", global); 
 			printf(" | Tires out? %3s", (pilot->tires < 0) ? "yes" : "no"); 
 			printf(" | Retired? %3s", pilot->retired ? "yes" : "no");
 			printf(" | Pitstop? %3s", pilot->pitstop ? "yes" : "no");
@@ -136,7 +139,7 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 
 		if(i==2)
 		{
-			if (checkSig(SIGEND, sem_control, 0)) finished = true;
+			if (checkSig(SIGEND, sem_race, numCell)) finished = true;
 		}
 		i++;
 	}
@@ -152,6 +155,9 @@ void pilot(int numCell, pid_t pid){
 	key_t sem_control_key = ftok(PATH, CONTROL);
 	int sem_control = semget(sem_control_key, 2, IPC_CREAT | PERMS);
 
+	key_t sem_race_key = ftok(PATH, RACE);
+    int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS);	
+
 	key_t sem_mutex_key = ftok(PATH, MUTEX);
 	int sem_mutex = semget(sem_mutex_key, 1, IPC_CREAT | PERMS);
 
@@ -162,7 +168,6 @@ void pilot(int numCell, pid_t pid){
 	// END INIT SECTION
 	int drivers[] = {1,3,6,7,8,20,11,21,25,19,4,9,44,14,13,22,27,99,26,77,17,10}; // Tableau contenant les #'s des conducteurs
 	int weather = 1, j;
-	bool writed = false;
 	TCar pilot;
 	pilot.num = drivers[numCell];
 	pilot.teamName = getTeamName(pilot.num); 
@@ -172,8 +177,6 @@ void pilot(int numCell, pid_t pid){
 	memcpy(&tabCar[numCell].teamName, &pilot.teamName, sizeof(const char *));
 	semUp(sem_mutex, TMP1);		
 		
-
-	writed = false;
 	do{
 		// Wait weather sig from server
 		while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 1);
@@ -190,7 +193,7 @@ void pilot(int numCell, pid_t pid){
 		memcpy(&tabCar[numCell].snum, &pilot.snum, sizeof(int));
 		semUp(sem_mutex, TMP1);
 
-		startRace(tabCar, numCell, &pilot, sem_control, weather, sem_mutex);
+		startRace(tabCar, numCell, &pilot, sem_control, weather, sem_mutex, sem_race);
 	}while(!checkSig(SIGEXIT, sem_control, 0));
 	eop:
 		shmdt(&shm_race);
@@ -198,6 +201,7 @@ void pilot(int numCell, pid_t pid){
 		semctl(sem_control, 0, IPC_RMID, NULL);
 		semctl(sem_control, 1, IPC_RMID, NULL);
 		semctl(sem_mutex, 0, IPC_RMID, NULL);
+		semctl(sem_race, numCell, IPC_RMID, NULL);
 		shmctl(shm_race, IPC_RMID, NULL);
 		return;
 }

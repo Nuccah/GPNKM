@@ -22,7 +22,7 @@ double repairTime();
 void sendReady(TTabCar *tabCar,  int numCell, TCar *pilot, int sem_mutex);
 void sendOver(TTabCar *tabCar, int numCell, TCar *pilot, int sem_mutex);
 void startRace(TTabCar *tabCar, int numCell, TCar *pilot, 
-				int sem_control, int weatherFactor, int sem_mutex);
+				int sem_control, int weatherFactor, int sem_mutex, int sem_race);
 void pilot(int numCell, pid_t pid);
 
 

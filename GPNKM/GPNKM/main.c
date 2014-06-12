@@ -40,7 +40,12 @@ int main (int argc, char *argv[])
 		// Sema for control shared mem race
 		key_t sem_mutex_key = ftok(PATH, MUTEX);
 		int sem_mutex = semget(sem_mutex_key, 1, IPC_CREAT | PERMS);
-		semReset(sem_mutex, 0);				
+		semReset(sem_mutex, 0);
+
+		key_t sem_race_key = ftok(PATH, RACE);
+	    int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS);
+	    int r;
+	    for(r = 0; r < 22; r++) semReset(sem_race, r);				
 		//*****************//
 		//*SHARED MEM INIT*//
 		//*****************//
@@ -60,6 +65,7 @@ int main (int argc, char *argv[])
 		//Server (Parent)
 		else server(); // Main server function
 
+		for(r = 0; r < 22; r++) semctl(sem_race, r, IPC_RMID, NULL);
 		semctl(sem_mutex, 0, IPC_RMID, NULL);
 		semctl(sem_type, 0, IPC_RMID, NULL);
 		semctl(sem_control, 0, IPC_RMID, NULL);
