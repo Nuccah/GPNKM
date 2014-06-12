@@ -98,7 +98,7 @@ void server(){
 					localStock.tabResult[i].timeLastLap = 0.0;
 					localStock.tabResult[i].lnum = 0;
 					localStock.tabResult[i].snum = 0;
-					localStock.tabResult[i].bestLapTime = -1.0;
+					localStock.tabResult[i].bestLapTime = 1000.0;
 					localStock.tabResult[i].retired = false;
 					localStock.tabResult[i].pitstop = false;
 				}while(!tabRead[i].ready);

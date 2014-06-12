@@ -38,8 +38,9 @@ void scoreMonitor(int sem_control, int type){
 					else printf("[%d] | ", i+1);
 					if(localStock.tabResult[i].num < 10) printf("[Driver 0%d] ", localStock.tabResult[i].num); 
 					else printf("[Driver %d] ", localStock.tabResult[i].num);
-					printf("lap: %3d | time: %10.2lf sec | ",
-							localStock.tabResult[i].lnum, localStock.tabResult[i].timeGlobal);
+					printf("lap: %3d | time: %10.2lf sec | best: %7.2lf sec | last: %7.2lf sec | ",
+							localStock.tabResult[i].lnum, localStock.tabResult[i].timeGlobal,
+							localStock.tabResult[i].bestLapTime, localStock.tabResult[i].timeLastLap);
 					printf("Retired : %3s", localStock.tabResult[i].retired ? "yes" : "no");
 					printf(" | Pitstop : %3s\n", localStock.tabResult[i].pitstop ? "yes" : "no");
 				}					
