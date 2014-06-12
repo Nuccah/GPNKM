@@ -11,7 +11,7 @@ int randomWeather(){
 
 void server(){
     // INIT SECTION
-    
+  
     key_t sem_type_key = ftok(PATH, TYPE);
     int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
 
@@ -35,6 +35,15 @@ void server(){
 	int shm_race = shmget(shm_race_key, 22*sizeof(TTabCar), S_IWUSR);
 	TTabCar *tabCar = (TTabCar *)shmat(shm_race, NULL, 0);
 
+	// File Parameters
+	int stream;
+	time_t now;
+	/* Time Function for filename definition */
+	now = time(NULL);
+	struct tm *time = localtime(&now);
+	char date_time[30];
+	strftime( date_time, sizeof(date_time), "%d%m%y_%H%M%S", time );
+	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH | O_TRUNC;
     
 	show_success("Server", "Initialisation complete");
 	int o;
@@ -295,56 +304,100 @@ void server(){
 		if(type == SIGGP){ // Terminate GP and send all last informations to monitor
 			sendSig(SIGEND, sem_control, 0);
 		}
-	    else{
-	    	//semReset(sem_mutex, TMP1);
-	    	show_notice("Server", "Waiting last drivers informations and end of run");
-	    	int s;
-	    	for(s=0; s<22; s++){
-				do{
-					while(semGet(sem_mutex, TMP1) != 1);
-					semDown(sem_mutex, TMP1);
-					memcpy(&tabRead[s].ready, &tabCar[s].ready, sizeof(bool));
-					semUp(sem_mutex, TMP1);
-				}while(tabRead[s].ready);
-	    	}
-	    	semReset(sem_mutex, TMP1);
-	    	for(s = 0; s<22; s++) semReset(sem_race, s);
-	    	sendSig(SIGEND, sem_control, 0);
-	    	TSharedStock tmpStock;
-	    	memcpy(&tmpStock, &localStock, sizeof(TSharedStock));
-	    	if(type != SIGGP) qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpQual);
-	    	else qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpGP);
+    	//semReset(sem_mutex, TMP1);
+    	show_notice("Server", "Waiting last drivers informations and end of run");
+    	int s;
+    	for(s=0; s<22; s++){
+			do{
+				while(semGet(sem_mutex, TMP1) != 1);
+				semDown(sem_mutex, TMP1);
+				memcpy(&tabRead[s].ready, &tabCar[s].ready, sizeof(bool));
+				semUp(sem_mutex, TMP1);
+			}while(tabRead[s].ready);
+    	}
+    	semReset(sem_mutex, TMP1);
+    	for(s = 0; s<22; s++) semReset(sem_race, s);
+    	sendSig(SIGEND, sem_control, 0);
+    	TSharedStock tmpStock;
+    	memcpy(&tmpStock, &localStock, sizeof(TSharedStock));
+    	if(type == SIGGP) qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpGP);
 
-	    	// Write into file
+    	// Write into file
 
-	    	switch(type){
-	    		case SIGQU1 : 
-	    					for(i=21; i>14; i--){ 
-	    						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
-	    						for(s=0; s<22; s++){
-	    							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
-	    						}
-	    					}
-	    				  	break;	    					
-	    		case SIGQU2 : 
-	    					for(i=14; i>7; i--) {
-	    						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
-	    						for(s=0; s<22; s++){
-	    							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
-	    						}
-	    					}
-	    				  	break;	
-	    		case SIGQU3 : 
-	    					for(i=7; i>=0; i--) {
-	    						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
-	    						for(s=0; s<22; s++){
-	    							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
-	    						}
-	    					}
-	    				  	break;	
-	    	}
-			show_success("Server", "Race terminated!");
-	    }
+    	switch(type){
+    		case SIGQU1 :
+    					qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpQual); 
+    					for(i=21; i>14; i--){ 
+    						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
+    						for(s=0; s<22; s++){
+    							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
+    						}
+    					}
+    				  	break;	    					
+    		case SIGQU2 :
+    					qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpQual);
+    					for(i=14; i>7; i--) {
+    						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
+    						for(s=0; s<22; s++){
+    							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
+    						}
+    					}
+    				  	break;	
+    		case SIGQU3 :
+    					qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpQual); 
+    					for(i=7; i>=0; i--) {
+    						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
+    						for(s=0; s<22; s++){
+    							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
+    						}
+    					}
+    				  	break;	
+    	}
+		show_success("Server", "Race terminated!");
+		if((stream = open(date_time, O_RDWR | O_CREAT, mode)) < 0){
+			perror("Error while opening/creating message.\n");
+		}
+		if(type == SIGGP){
+			TTabGP tabTmpGP;
+			for(i==0; i<22; i++){
+				tabTmpGP.results[i].pos = i;
+				tabTmpGP.results[i].num = localStock.tabResult[i].num;
+				tabTmpGP.results[i].lnum = localStock.tabResult[i].lnum;
+				tabTmpGP.results[i].teamName = localStock.tabResult[i].teamName;
+				tabTmpGP.results[i].timeBestLap = localStock.tabResult[i].bestLapTime;
+				tabTmpGP.results[i].timeGlobal = localStock.tabResult[i].timeGlobal;
+				tabTmpGP.results[i].retired = localStock.tabResult[i].retired;
+			}
+			for(i=0;i<3;i++){
+				tabTmpGP.bestSect[i].num;
+				tabTmpGP.bestSect[i].teamName;
+				tabTmpGP.bestSect[i].snum;
+				tabTmpGP.bestSect[i].timeBestSect;
+			}
+			tabTmpGP.bestLap.num;
+			tabTmpGP.bestLap.teamName;
+			tabTmpGP.bestLap.lnum;
+			tabTmpGP.bestLap.timeBestLap;
+			write(stream,&tabTmpGP,sizeof(TTabGP)); 
+		}
+		else{
+			TTabQT tabTmpQT; 
+			for(i=0; i<22; i++){
+				tabTmpQT.results[i].pos = i;
+				tabTmpQT.results[i].num = localStock.tabResult[i].num;
+				tabTmpQT.results[i].teamName = localStock.tabResult[i].teamName;
+				tabTmpQT.results[i].timeBestLap = localStock.tabResult[i].bestLapTime;
+				tabTmpQT.results[i].retired = localStock.tabResult[i].retired;
+			}
+			for(i=0;i<3;i++){
+				tabTmpQT.bestSect[i].num  ;
+				tabTmpQT.bestSect[i].teamName  ;
+				tabTmpQT.bestSect[i].snum  ;
+				tabTmpQT.bestSect[i].timeBestSect  ;
+			}
+			write(stream,&tabTmpQT,sizeof(TTabQT));
+		}
+		close(stream);
 	}while(!checkSig(SIGEXIT, sem_control, 0));
 	eop:
 		shmdt(&shm_race);

@@ -200,7 +200,26 @@ void weatherMsg(int number){
 }
 
 void afficheResultats(){
-
+	/*
+	int stream;
+	time_t now;
+	/* Time Function for filename definition 
+	now = time(NULL);
+	struct tm *time = localtime(&now);
+	char date_time[30];
+	strftime( date_time, sizeof(date_time), "%d%m%y_%H%M%S", time );
+	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH | O_TRUNC;
+	if((stream = open(date_time, O_RDWR | O_CREAT, mode)) < 0)
+{
+	perror("Error while opening/creating message.\n");
+}
+TWriteQT tmp2;		
+for(i=0; i<22; i++){
+	read(stream,&tmp2,sizeof(TWriteQT));
+	printf("%d | %d | %s | %0.2lf | %s\n", tmp2.pos, tmp2.num, tmp2.teamName, tmp2.timeBestLap, tmp2.retired ? "yes" : "no");
+	printf("bloop\n");
+}
+close(stream);*/
 }
 
 void afficheTrials(){
