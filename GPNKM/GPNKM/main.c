@@ -38,11 +38,9 @@ int main (int argc, char *argv[])
 		//*SEMA INIT*//
 		//***********//
 		// Sema for control shared mem race
-		key_t sem_race_key = ftok(PATH, RACE); // Sema Key generated
-		int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
-
-		int i;
-		for(i = 0; i < 22; i++) semReset(sem_race, i);				
+		key_t sem_mutex_key = ftok(PATH, MUTEX);
+		int sem_mutex = semget(sem_mutex_key, 1, IPC_CREAT | PERMS);
+		semReset(sem_mutex, 0);				
 		//*****************//
 		//*SHARED MEM INIT*//
 		//*****************//
@@ -50,7 +48,7 @@ int main (int argc, char *argv[])
 		int shm_race = shmget(shm_race_key, 22*sizeof(TTabCar), IPC_CREAT | PERMS);
 
 		//***********//
-		//*PIPE INIT*//
+		//*FORK INIT*//
 		//***********//
 		process_id = fork(); // Deuxieme Fork (Server, Pilot)
 		if (process_id < 0) {
@@ -62,7 +60,7 @@ int main (int argc, char *argv[])
 		//Server (Parent)
 		else server(); // Main server function
 
-		for(i = 0; i < 22; i++)	semctl(sem_race, i, IPC_RMID, NULL);
+		semctl(sem_mutex, 0, IPC_RMID, NULL);
 		semctl(sem_type, 0, IPC_RMID, NULL);
 		semctl(sem_control, 0, IPC_RMID, NULL);
 		semctl(sem_control, 1, IPC_RMID, NULL);

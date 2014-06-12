@@ -18,8 +18,8 @@ void server(){
     key_t sem_control_key = ftok(PATH, CONTROL);
     int sem_control = semget(sem_control_key, 2, IPC_CREAT | PERMS);
 
-    key_t sem_race_key = ftok(PATH, RACE);
-    int sem_race = semget(sem_race_key, 22, IPC_CREAT | PERMS);
+	key_t sem_mutex_key = ftok(PATH, MUTEX);
+	int sem_mutex = semget(sem_mutex_key, 1, IPC_CREAT | PERMS);
 
     key_t sem_DispSrv_key = ftok(PATH, STOCK);
     int sem_DispSrv = semget(sem_DispSrv_key, 1, IPC_CREAT | PERMS);
@@ -64,12 +64,12 @@ void server(){
 		// Wait for drivers ready
 		for(i = 0; i < 22; i++){ 
 			do{
-				while(semGet(sem_race, i) != 1);
-				semDown(sem_race, i);
+				while(semGet(sem_mutex, 0) != 1);
+				semDown(sem_mutex, 0);
 			    memcpy(&tabRead[i].teamName, &tabCar[i].teamName, sizeof(char *));
 			    memcpy(&tabRead[i].num, &tabCar[i].num, sizeof(int));
 			    memcpy(&tabRead[i].ready, &tabCar[i].ready, sizeof(bool));
-			    semUp(sem_race, i);
+			    semUp(sem_mutex, 0);
 
 				localStock.tabResult[i].teamName = tabRead[i].teamName;
 				localStock.tabResult[i].num = tabRead[i].num;
@@ -118,8 +118,8 @@ void server(){
 						tmpLap = localStock.tabResult[k].lnum;
 						tmpSec = localStock.tabResult[k].snum;
 
-						while(semGet(sem_race, k) != 1);
-						semDown(sem_race, k);
+						while(semGet(sem_mutex, 0) != 1);
+						semDown(sem_mutex, 0);
 						memcpy(&tabRead[k].lnum, &tabCar[k].lnum, sizeof(int));
 						memcpy(&tabRead[k].snum, &tabCar[k].snum, sizeof(int));
 						for(i=tmpLap; i <= tabRead[k].lnum; i++){
@@ -127,7 +127,7 @@ void server(){
 						}
 						memcpy(&tabRead[k].retired, &tabCar[k].retired, sizeof(bool));
 						memcpy(&tabRead[k].pitstop, &tabCar[k].pitstop, sizeof(bool));
-						semUp(sem_race, k);
+						semUp(sem_mutex, 0);
 						
 						localStock.tabResult[k].lnum = tabRead[k].lnum;
 						localStock.tabResult[k].snum = tabRead[k].snum;
@@ -210,20 +210,19 @@ void server(){
 	    	show_notice("Server", "Waiting last drivers informations and end of run");
 	    	for(s=0; s<22; s++){
 				do{
-					while(semGet(sem_race, s) != 1);
-					semDown(sem_race, s);
+					while(semGet(sem_mutex, 0) != 1);
+					semDown(sem_mutex, 0);
 					memcpy(&tabRead[s].ready, &tabCar[s].ready, sizeof(bool));
-					semUp(sem_race, s);
+					semUp(sem_mutex, 0);
 				}while(tabRead[s].ready);
 	    	}
-	    	for(s=0;s<22;s++) semReset(sem_race, s);
+	    	semReset(sem_mutex, 0);
 	    	show_success("Server", "Race terminated!");
 	}while(!checkSig(SIGEXIT, sem_control, 0));
 	eop:
 		shmdt(&shm_race);
 		shmdt(&shm_DispSrv);
-		int i;
-		for(i = 0; i < 22; i++)	semctl(sem_race, i, IPC_RMID, NULL);
+		semctl(sem_mutex, 0, IPC_RMID, NULL);
 		semctl(sem_type, 0, IPC_RMID, NULL);
 		semctl(sem_control, 0, IPC_RMID, NULL);
 		semctl(sem_control, 1, IPC_RMID, NULL);
