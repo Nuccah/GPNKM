@@ -78,7 +78,7 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 			run.speed = speedWeather(weatherFactor, isDamaged);
 			run.stime = sectorTime(run.speed, i);
 
-			sleep(run.stime*0.03);
+			usleep(sectorSleep(run.stime,0.2));
 			tireStatus = tireWear(tireStatus, weatherFactor);
 			if(!pilot->retired)
 			{
@@ -101,7 +101,7 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 							isDamaged = false;
 						}
 						pilot->pitstop = true;
-						sleep(pitstopsleep*0.03);
+						usleep(sectorSleep(pitstopsleep,0.2));
 						run.stime += pitstopsleep;
 						// PITSTOP END
 					}
