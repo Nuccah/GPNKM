@@ -130,10 +130,9 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 		semDown(sem_mutex, TMP1);
 		memcpy(&tabCar[numCell].snum, &pilot->snum, sizeof(int));
 		memcpy(&tabCar[numCell].lnum, &pilot->lnum, sizeof(int));
-		memcpy(&tabCar[numCell].lapTimes[lap].tabSect[i].stime, &run.stime, sizeof(double));
-		memcpy(&tabCar[numCell].lapTimes[lap].tabSect[i].speed, &run.speed, sizeof(double));
 		memcpy(&tabCar[numCell].retired, &pilot->retired, sizeof(bool));
 		memcpy(&tabCar[numCell].pitstop, &pilot->pitstop, sizeof(bool));
+		memcpy(&tabCar[numCell].lapTimes[lap].tabSect[i], &run, sizeof(double));
 		semUp(sem_mutex, TMP1);
 
 		if(pilot->retired) finished = true;
