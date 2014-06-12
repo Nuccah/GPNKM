@@ -99,6 +99,8 @@ void server(){
 					localStock.tabResult[i].lnum = 0;
 					localStock.tabResult[i].snum = 0;
 					localStock.tabResult[i].bestLapTime = 0.0;
+					localStock.tabResult[i].retired = false;
+					localStock.tabResult[i].pitstop = false;
 				}while(!tabRead[i].ready);
 			}
 		}
@@ -114,25 +116,31 @@ void server(){
 		semReset(sem_control, 1);
 		// Send start signal
 		double timeMax = 0.0;
+		int maxCar = 22;
 		switch(type){
 			case SIGTR1: 
 					timeMax = 5400.0;
+					sendSig(SIGSTART, sem_control, 0);
 					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 		
 					break;
 			case SIGTR2: 
 					timeMax = 5400.0;
+					sendSig(SIGSTART, sem_control, 0);
 					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 
 					break;
 			case SIGTR3: 
 					timeMax = 3600.0;
+					sendSig(SIGSTART, sem_control, 0);
 					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 
 					break;
 			case SIGQU1: 
 					timeMax = 1100.0;
+					sendSig(SIGSTART, sem_control, 0);
 					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 
 					break;
 			case SIGQU2: 
 					timeMax = 600.0;
+					sendSig(SIGSTART, sem_control, 0);
 					for(i = 0; i < 22; i++)	{
 						bool selected = true;
 						for(m = 0; m < 22; m++){
@@ -140,9 +148,11 @@ void server(){
 						} 
 						if(selected) sendSig(SIGSTART, sem_race, i);
 					} 
+					maxCar = 15;
 					break;
 			case SIGQU3: 
 					timeMax = 800.0;
+					sendSig(SIGSTART, sem_control, 0);
 					for(i = 0; i < 22; i++)	{
 						bool selected = true;
 						for(m = 0; m < 22; m++){
@@ -150,6 +160,7 @@ void server(){
 						} 
 						if(selected) sendSig(SIGSTART, sem_race, i);
 					} 
+					maxCar = 8;
 					break;
 		}
 		semReset(sem_type, 0);
@@ -271,7 +282,7 @@ void server(){
 						sendSig(SIGEND, sem_race, k);
 						nbFinished++; 
 						tabFinished[k] = true;
-						if(nbFinished == 22) finished = true;
+						if(nbFinished == maxCar) finished = true;
 					}
 				}
 			}    
@@ -295,16 +306,16 @@ void server(){
 	    	semReset(sem_mutex, TMP1);
 	    	for(s = 0; s<22; s++) semReset(sem_race, s);
 	    	sendSig(SIGEND, sem_control, 0);
-	    	show_success("Server", "Race terminated!");
 	    	TSharedStock tmpStock;
-	    	tmpStock = localStock;
-	    	// qsort DEREK
-	    	if(type != SIGGP) qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpTmp);
-	    	else ;
+	    	memcpy(&tmpStock, &localStock, sizeof(TSharedStock));
+	    	if(type != SIGGP) qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpQual);
+	    	else qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpGP);
+
 	    	// Write into file
+
 	    	switch(type){
 	    		case SIGQU1 : 
-	    					for(i==21; i>14; i--){ 
+	    					for(i=21; i>14; i--){ 
 	    						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
 	    						for(s=0; s<22; s++){
 	    							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
@@ -312,7 +323,7 @@ void server(){
 	    					}
 	    				  	break;	    					
 	    		case SIGQU2 : 
-	    					for(i==14; i>7; i--) {
+	    					for(i=14; i>7; i--) {
 	    						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
 	    						for(s=0; s<22; s++){
 	    							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
@@ -320,7 +331,7 @@ void server(){
 	    					}
 	    				  	break;	
 	    		case SIGQU3 : 
-	    					for(i==7; i>=0; i--) {
+	    					for(i=7; i>=0; i--) {
 	    						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
 	    						for(s=0; s<22; s++){
 	    							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
@@ -328,6 +339,7 @@ void server(){
 	    					}
 	    				  	break;	
 	    	}
+			show_success("Server", "Race terminated!");
 	    }
 	}while(!checkSig(SIGEXIT, sem_control, 0));
 	eop:
@@ -359,14 +371,4 @@ void endRace(int sig){
 	key_t sem_control_key = ftok(PATH, CONTROL);
 	int sem_control = semget(sem_control_key, 2, IPC_CREAT | PERMS);
 	sendSig(SIGEND, sem_control, 0);
-}
-
-int cmpTmp(TResults *a, TResults *b){
-	if(a->bestLapTime == b->bestLapTime){
-		if(a->timeGlobal > b->timeGlobal) return 1;
-		else if(a->timeGlobal < b->timeGlobal) return -1;
-		else return 0;
-	}
-	else if(a->bestLapTime > b->bestLapTime) return 1;
-	else return -1;
 }

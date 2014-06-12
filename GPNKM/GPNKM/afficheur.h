@@ -2,7 +2,6 @@
 #define H_AFFICHEUR
 #include "structures.h"
 
-int cmpfunct(TResults *a, TResults *b);
 void showMainMenu();
 
 

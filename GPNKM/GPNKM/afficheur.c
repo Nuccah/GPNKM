@@ -11,7 +11,7 @@ void scoreMonitor(int sem_control, int type){
 
 	TSharedStock *listStock = (TSharedStock *) shmat(shm_DispSrv, NULL, 0); 
 	waitSig(SIGSTART, sem_control, 0);
-	printf("Run begins!!!\n\n");
+	show_notice("Monitor", "Run begins!!!");
 	bool finished = false;
 	int k, i;
 	TSharedStock localStock;
@@ -29,7 +29,8 @@ void scoreMonitor(int sem_control, int type){
 			memcpy(&localStock, listStock, sizeof(TSharedStock));
 			semUp(sem_DispSrv, 0);
 			if(DISPMODE == 0){
-				qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpfunct);
+				if(type == SIGGP) qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpGP);
+				else qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpQual);
 				int i;
 				system("clear");
 				for(i = 0; i < 22; i++){
@@ -56,7 +57,6 @@ void scoreMonitor(int sem_control, int type){
 
 void showTRMenu(int sem_control, int sem_type)
 {
-	fflush(stdin);
 	system ( "clear" );
 	printf("\033[36m");
 	printf ("Trial Runs!\n");
@@ -66,8 +66,7 @@ void showTRMenu(int sem_control, int sem_type)
 	printf ("3 : Begin Trial Run 3\n");
 	printf ("4 : Show Results of Trial Runs\n");
 	printf ("0 : Back\n");
-	printf ("-------------------------------------\n\n");
-	printf("\033[0m");
+	printf ("-------------------------------------\033[0m \n\n");
 	switch(getchar())
 	{
 		case '1' : show_notice("Monitor", "Trial 1 is going to begin");
@@ -83,15 +82,19 @@ void showTRMenu(int sem_control, int sem_type)
 				   scoreMonitor(sem_control, SIGTR3);
 				   break;
 		case '4' : printf("Show Results\n"); break;
-		case '0' : showMainMenu(); break;
-		default  : showTRMenu(sem_control, sem_type); break;
+		case '0' : 
+			fflush(stdin);
+			showMainMenu(); 
+			break;
+		default  : 
+			fflush(stdin);
+			showTRMenu(sem_control, sem_type); 
+			break;
 	}
-	fflush(stdin);
 }
 
 void showQualifMenu(int sem_control,  int sem_type)
 {
-	fflush(stdin);
 	system ( "clear" );
 	printf("\033[36m");
 	printf ("Welcome to the worldest famous GPNKM!\n");
@@ -101,8 +104,7 @@ void showQualifMenu(int sem_control,  int sem_type)
 	printf ("3 : Begin Qualifier 3\n");
 	printf ("4 : Show Results of Qualification Runs\n");
 	printf ("0 : Back\n");
-	printf ("-------------------------------------\n\n");
-	printf("\033[0m");
+	printf ("-------------------------------------\033[0m \n\n");
 	switch(getchar())
 	{
 		case '1' : show_notice("Monitor", "Qualification 1 is going to begin");
@@ -118,10 +120,15 @@ void showQualifMenu(int sem_control,  int sem_type)
 				   scoreMonitor(sem_control, SIGQU3);
 				   break;
 		case '4' : printf("Show Results of Qualifiers\n"); break;
-		case '0' : showMainMenu(); break;
-		default  : showQualifMenu(sem_control, sem_type); break;
-	}   
-	fflush(stdin);
+		case '0' : 
+			fflush(stdin);
+			showMainMenu(); 
+			break;
+		default  :
+			fflush(stdin); 
+			showQualifMenu(sem_control, sem_type); 
+			break;
+	} 
 }
 
 void endOfProgram(int sem_control, int sem_type)
@@ -135,7 +142,7 @@ void endOfProgram(int sem_control, int sem_type)
 	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
 	int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), S_IRUSR | S_IWUSR);
 	shmctl(shm_DispSrv, IPC_RMID, NULL);
-	show_success("Monitor", "All processes closed successfully\nProgram will now exit");
+	show_success("Monitor", "All processes closed successfully\nThanks for your presence at GPNKM championship");
 	semctl(sem_control, 0, IPC_RMID, NULL);
 }
 
@@ -158,8 +165,7 @@ void showMainMenu()
 	int weather = 1;
 	
 	while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 1);	
-	
-	fflush(stdin);
+
 	system ( "clear" );
 	printf("\033[36m");
 	printf ("Welcome to the worldest famous GPNKM!\n");
@@ -171,12 +177,17 @@ void showMainMenu()
 	printf ("4 : Show Results of Grand Prix\n");
 	printf ("5 : Restart Grand Prix\n");
 	printf ("0 : Exit\n");
-	printf ("-------------------------------------\n\n");
- 	printf("\033[0m");
+	printf ("-------------------------------------\033[0m \n\n");
 	switch(getchar())
 	{
-		case '1' : showTRMenu(sem_control, sem_type); break;
-		case '2' : showQualifMenu(sem_control, sem_type); break;
+		case '1' : 
+				fflush(stdin);
+				showTRMenu(sem_control, sem_type); 
+				break;
+		case '2' : 
+				fflush(stdin);
+				showQualifMenu(sem_control, sem_type); 
+				break;
 		case '3' : show_notice("Monitor", "Grand Prix is going to begin");
 				   sendSig(SIGGP, sem_type, 0);
 				   scoreMonitor(sem_control, SIGGP);
@@ -184,26 +195,9 @@ void showMainMenu()
 		case '4' : printf("Show Results\n"); break;
 		case '5' : printf("Restart Grand Prix\n"); break;
 		case '0' : endOfProgram(sem_control, sem_type); break;
-		default  : showMainMenu(); break;
+		default  : 
+			fflush(stdin);
+			showMainMenu(); 
+			break;
 	}
-    fflush(stdin);
-}
-
-int cmpfunct(TResults *a, TResults *b){
-	if(a->lnum == b->lnum)
-	{
-		if(a->snum ==  b->snum)
-			if (a->timeGlobal <  b->timeGlobal) return -1;
-			else if (a->timeGlobal >  b->timeGlobal) return 1;
-			else return 0;
-		else
-		{
-			if (a->snum < b->snum) return 1;
-			else return -1;
-		} 
-			
-	}
-	else
-		if (a->lnum < b->lnum) return 1;
-		else return -1;
 }

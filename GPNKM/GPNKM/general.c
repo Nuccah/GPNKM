@@ -61,3 +61,34 @@ bool checkSig(int sig, int sem_id, int sem_channel){
 int getSig(int sem_id, int sem_channel){
 	return semctl(sem_id, sem_channel, GETVAL);
 }
+
+// Compare on best lap times
+int cmpQual(TResults *a, TResults *b){
+	if(a->bestLapTime == b->bestLapTime){
+		if(a->timeGlobal > b->timeGlobal) return 1;
+		else if(a->timeGlobal < b->timeGlobal) return -1;
+		else return 0;
+	}
+	else if(a->bestLapTime > b->bestLapTime) return 1;
+	else return -1;
+}
+
+// Compare on global time and lap numbers
+int cmpGP(TResults *a, TResults *b){
+	if(a->lnum == b->lnum)
+	{
+		if(a->snum ==  b->snum)
+			if (a->timeGlobal <  b->timeGlobal) return -1;
+			else if (a->timeGlobal >  b->timeGlobal) return 1;
+			else return 0;
+		else
+		{
+			if (a->snum < b->snum) return 1;
+			else return -1;
+		} 
+			
+	}
+	else
+		if (a->lnum < b->lnum) return 1;
+		else return -1;
+}

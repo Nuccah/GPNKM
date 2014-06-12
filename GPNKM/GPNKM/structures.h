@@ -134,6 +134,11 @@ bool checkSig(int sig, int sem_id, int sem_channel);
 // return the value of the signal in the sema
 int getSig(int sem_id, int sem_channel);
 
+// Compare on best lap times
+int cmpQual(TResults *a, TResults *b);
+// Compare on global time and lap numbers
+int cmpGP(TResults *a, TResults *b);
+
 void show_notice(const char *env, const char *msg);
 void show_error(const char *env, const char *msg);
 void show_debug(const char *env, const char *msg);

@@ -38,8 +38,6 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 	// END INIT SECTION
 	// Send ready to server
 	//pilot->lapTimes = malloc(150*sizeof(TLap)); // Alloc sufficient laps for trial
-	sendReady(tabCar, numCell, pilot, sem_mutex); // Send ready to the server
-	waitSig(SIGSTART, sem_race, numCell); // Wait for start signal
 	int i = 0;
 	int lap = 0;
 	bool isDamaged = false;
@@ -53,6 +51,17 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 	double tireStatus = 100.0;
 	double global = 0.0;
 	int tmpLap = 0;
+	while((semGet(sem_mutex, TMP1) != 1));
+	semDown(sem_mutex, TMP1);
+	memcpy(&tabCar[numCell].snum, &pilot->snum, sizeof(int));
+	memcpy(&tabCar[numCell].lnum, &pilot->lnum, sizeof(int));
+	memcpy(&tabCar[numCell].retired, &pilot->retired, sizeof(bool));
+	memcpy(&tabCar[numCell].pitstop, &pilot->pitstop, sizeof(bool));
+	memcpy(&tabCar[numCell].lapTimes[lap].tabSect[i], &run, sizeof(double));
+	semUp(sem_mutex, TMP1);
+	sendReady(tabCar, numCell, pilot, sem_mutex); // Send ready to the server
+	waitSig(SIGSTART, sem_race, numCell); // Wait for start signal
+
 	while(!finished)
 	{
 		if(i == 3)
