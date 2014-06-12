@@ -32,7 +32,7 @@ int main (int argc, char *argv[])
 	/*Tampon Serveur (Child)*/
 	else{
 		// DAEMON CODE START //
-	//	daemonize();
+		daemonize();
 		// PROCESS NOW A DAEMON //
 		//***********//
 		//*SEMA INIT*//

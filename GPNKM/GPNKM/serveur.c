@@ -98,7 +98,7 @@ void server(){
 					localStock.tabResult[i].timeLastLap = 0.0;
 					localStock.tabResult[i].lnum = 0;
 					localStock.tabResult[i].snum = 0;
-					localStock.tabResult[i].bestLapTime = 0.0;
+					localStock.tabResult[i].bestLapTime = -1.0;
 					localStock.tabResult[i].retired = false;
 					localStock.tabResult[i].pitstop = false;
 				}while(!tabRead[i].ready);
@@ -204,7 +204,8 @@ void server(){
 							{
 								if(localStock.tabResult[k].snum == 2) {
 									localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tmpLap].tabSect);
-									if(localStock.tabResult[k].bestLapTime > localStock.tabResult[k].timeLastLap){
+									if((localStock.tabResult[k].bestLapTime > localStock.tabResult[k].timeLastLap) &&
+										(localStock.tabResult[k].timeLastLap != 0.0)){
 										localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
 									}
 								}
@@ -219,7 +220,8 @@ void server(){
 								for(j=tmpSec; j<=2; j++){
 									if(localStock.tabResult[k].snum == 2) {
 										localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[i].tabSect);
-										if(localStock.tabResult[k].bestLapTime > localStock.tabResult[k].timeLastLap){
+										if((localStock.tabResult[k].bestLapTime > localStock.tabResult[k].timeLastLap) &&
+											(localStock.tabResult[k].timeLastLap != 0.0)){
 											localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
 										}
 									}
@@ -230,7 +232,8 @@ void server(){
 								for(j=0; j<=tabRead[k].snum; j++){
 									if(localStock.tabResult[k].snum == 2) {
 										localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[i].tabSect);
-										if(localStock.tabResult[k].bestLapTime > localStock.tabResult[k].timeLastLap){
+										if((localStock.tabResult[k].bestLapTime > localStock.tabResult[k].timeLastLap) &&
+											(localStock.tabResult[k].timeLastLap != 0.0)){
 											localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
 										}
 									}
@@ -241,7 +244,8 @@ void server(){
 								for(j=0; j<=2; j++){
 									if(localStock.tabResult[k].snum == 2){ 
 										localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[i].tabSect);
-										if(localStock.tabResult[k].bestLapTime > localStock.tabResult[k].timeLastLap){
+										if((localStock.tabResult[k].bestLapTime > localStock.tabResult[k].timeLastLap) &&
+											(localStock.tabResult[k].timeLastLap != 0.0)){
 											localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
 										}
 									}
@@ -362,13 +366,4 @@ void server(){
 double lapTime(TSect *tabSect){
 	double tmp = tabSect[0].stime + tabSect[1].stime + tabSect[2].stime;
     return tmp;
-}
-
-// Executed when alarm() is at 0
-void endRace(int sig){
-    signal(SIGALRM, SIG_IGN);
-    printf("\n-------------------- Alarm ended ------------------\n\n");
-	key_t sem_control_key = ftok(PATH, CONTROL);
-	int sem_control = semget(sem_control_key, 2, IPC_CREAT | PERMS);
-	sendSig(SIGEND, sem_control, 0);
 }
