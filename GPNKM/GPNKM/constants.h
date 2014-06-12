@@ -63,8 +63,8 @@
 #define WETFACTOR 1.2
 
 /* random loss percentage constants (by lap)*/
-#define CRASH 0.0005
-#define BREAK 0.0015
+#define CRASH 0.5
+#define BREAK 0.003
 #define DAMAGEFACTOR 0.7
 
 /* sector length (in meters) */
