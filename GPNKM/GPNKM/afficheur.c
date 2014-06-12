@@ -1,6 +1,6 @@
 #include "afficheur.h"
 
-void scoreMonitor(int sem_control, int type, int level){
+void scoreMonitor(int sem_control, int type, int level, char *date_time){
 	// INIT SECTION
 	key_t sem_type_key = ftok(PATH, TYPE);
 	int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
@@ -63,10 +63,10 @@ void scoreMonitor(int sem_control, int type, int level){
 	printf("Press 0 to return to main menu...\n");
 	while(getchar() != '0') fflush(stdin);
 	level++;
-	showMainMenu(level);
+	showMainMenu(level, date_time);
 }
 
-void showTRMenu(int sem_control, int sem_type, int level){
+void showTRMenu(int sem_control, int sem_type, int level, char *date_time){
 	system ( "clear" );
 	fflush(stdin);
 	printf("\033[36m");
@@ -84,7 +84,7 @@ void showTRMenu(int sem_control, int sem_type, int level){
 				if (level == 0){
 					show_notice("Monitor", "Trial 1 is going to begin");
 				    sendSig(SIGTR1, sem_type, 0);
-				    scoreMonitor(sem_control, SIGTR1, level);
+				    scoreMonitor(sem_control, SIGTR1, level, date_time);
 				    break;
 				}
 		case '2' : 
@@ -92,7 +92,7 @@ void showTRMenu(int sem_control, int sem_type, int level){
 				if (level == 1){
 					show_notice("Monitor", "Trial 2 is going to begin");
 				    sendSig(SIGTR2, sem_type, 0);
-				    scoreMonitor(sem_control, SIGTR2, level);
+				    scoreMonitor(sem_control, SIGTR2, level, date_time);
 				    break;
 				}
 		case '3' : 
@@ -100,21 +100,21 @@ void showTRMenu(int sem_control, int sem_type, int level){
 				if (level == 2){
 					show_notice("Monitor", "Trial 3 is going to begin");
 				    sendSig(SIGTR3, sem_type, 0);
-				    scoreMonitor(sem_control, SIGTR3, level);
+				    scoreMonitor(sem_control, SIGTR3, level, date_time);
 				    break;
 				}
 		case '0' : 
 			fflush(stdin);
-			showMainMenu(level); 
+			showMainMenu(level, date_time); 
 			break;
 		default  : 
 			fflush(stdin);
-			showTRMenu(sem_control, sem_type, level); 
+			showTRMenu(sem_control, sem_type, level, date_time); 
 			break;
 	}
 }
 
-void showQualifMenu(int sem_control, int sem_type, int level){
+void showQualifMenu(int sem_control, int sem_type, int level, char *date_time){
 	system ( "clear" );
 	fflush(stdin);
 	printf("\033[36m");
@@ -131,33 +131,33 @@ void showQualifMenu(int sem_control, int sem_type, int level){
 				if (level == 3){
 					show_notice("Monitor", "Qualification 1 is going to begin");
 				   	sendSig(SIGQU1, sem_type, 0);
-				   	scoreMonitor(sem_control, SIGQU1, level);
+				   	scoreMonitor(sem_control, SIGQU1, level, date_time);
 				  	break;
 				}	
 		case '2' : 
 				if (level == 4){
 					show_notice("Monitor", "Qualification 1 is going to begin");
 					sendSig(SIGQU2, sem_type, 0);
-					scoreMonitor(sem_control, SIGQU2, level);
+					scoreMonitor(sem_control, SIGQU2, level, date_time);
 					break;
 				}
 		case '3' : 
 				if (level == 5){
 					show_notice("Monitor", "Qualification 1 is going to begin");
 					sendSig(SIGQU3, sem_type, 0);
-					scoreMonitor(sem_control, SIGQU3, level);
+					scoreMonitor(sem_control, SIGQU3, level, date_time);
 					break;
 				}
 		case '0' : 
-			showMainMenu(level); 
+			showMainMenu(level, date_time); 
 			break;
 		default  :
-			showQualifMenu(sem_control, sem_type, level); 
+			showQualifMenu(sem_control, sem_type, level, date_time); 
 			break;
 	} 
 }
 
-void showMainMenu(int level){
+void showMainMenu(int level, char *date_time){
 	fflush(stdin);
 	key_t sem_type_key = ftok(PATH, TYPE);
 	int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
@@ -175,7 +175,7 @@ void showMainMenu(int level){
 	if (level < 3) printf ("1 : Begin Test Runs\n");
 	if (level > 2 && level < 6) printf ("2 : Begin Qualifiers\n");
 	if (level == 6) printf ("3 : Begin Grand Prix\n");
-	printf ("4 : Show Results of Grand Prix\n");
+	if (level > 2) printf ("4 : Show Results of Grand Prix\n");
 	printf ("5 : Restart Grand Prix\n");
 	printf ("0 : Exit\n");
 	printf ("-------------------------------------\033[0m \n\n");
@@ -183,26 +183,26 @@ void showMainMenu(int level){
 	{
 		case '1' : 
 				if(level < 3){
-					showTRMenu(sem_control, sem_type, level); 
+					showTRMenu(sem_control, sem_type, level, date_time); 
 					break;
 				}
 		case '2' : 
 				if(level > 2 && level < 6){
-					showQualifMenu(sem_control, sem_type, level);
+					showQualifMenu(sem_control, sem_type, level, date_time);
 					break;
 				}	 
 		case '3' : 
 				if(level == 6){
 					show_notice("Monitor", "Grand Prix is going to begin");
 			   		sendSig(SIGGP, sem_type, 0);
-			   		scoreMonitor(sem_control, SIGGP, level);
+			   		scoreMonitor(sem_control, SIGGP, level, date_time);
 			   		break;
 				}   	
-		case '4' : printf("Show Results\n"); break;
+		case '4' : if (level > 2){afficheResultats(date_time, level); break;}
 		case '5' : printf("Restart Grand Prix\n"); break;
 		case '0' : endOfProgram(sem_control, sem_type); break;
 		default  : 
-			showMainMenu(level); 
+			showMainMenu(level, date_time); 
 			break;
 	}
 }
@@ -233,37 +233,72 @@ void weatherMsg(int number){
 	return;
 }
 
-void afficheResultats(){
-	/*
-	int stream;
-	time_t now;
-	/* Time Function for filename definition 
-	now = time(NULL);
-	struct tm *time = localtime(&now);
-	char date_time[30];
-	strftime( date_time, sizeof(date_time), "%d%m%y_%H%M%S", time );
-	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH | O_TRUNC;
-	if((stream = open(date_time, O_RDWR | O_CREAT, mode)) < 0)
-{
-	perror("Error while opening/creating message.\n");
-}
-TWriteQT tmp2;		
-for(i=0; i<22; i++){
-	read(stream,&tmp2,sizeof(TWriteQT));
-	printf("%d | %d | %s | %0.2lf | %s\n", tmp2.pos, tmp2.num, tmp2.teamName, tmp2.timeBestLap, tmp2.retired ? "yes" : "no");
-	printf("bloop\n");
-}
-close(stream);*/
+void afficheResultats(char *date_time, int level){
+	fflush(stdin);
+	int stream = 0, i, j, nbReads;
+
+	TTabGP tabResultsGP;
+	if((stream = open(date_time, O_RDWR | O_CREAT)) < 0)
+	{
+		perror("Error while opening/creating message.\n");
+	}
+	lseek(stream, 0, SEEK_SET);
+	if (level < 6){
+		nbReads = 3;
+
+	} 
+	else if(level > 5 && level < 7){
+		nbReads = 6;
+	}
+	TTabQT tabResultsQT[nbReads]; 
+	for(i=0; i<nbReads; i++){
+		read(stream,&tabResultsQT[i],sizeof(TTabQT));
+	}
+	if(level == 7){
+		TTabGP tabResultsGP;
+		read(stream,&tabResultsGP,sizeof(TTabGP));
+	} 
+	close(stream);
+	system ( "clear" );
+	printf("\033[36m");
+	printf ("World Famous GPNKM Race!\n");
+	printf ("-------------------------------------\n\n");
+	if (level > 2) printf ("1 : Show Trial Results\n");
+	if (level > 5) printf ("2 : Show Qualifier Results\n");
+	if (level == 7) printf ("3 : Show Grand Prix Results\n");
+	printf ("0 : Back\n");
+	printf ("-------------------------------------\033[0m \n\n");
+	switch(getchar())
+	{
+		case '1' : 
+				if(level > 2){
+					afficheTrials(&tabResultsQT[0], &tabResultsQT[1], &tabResultsQT[2]); 
+					break;
+				}
+		case '2' : 
+				if(level > 5){
+					afficheQualif(&tabResultsQT[3], &tabResultsQT[4], &tabResultsQT[5]);
+					break;
+				}	 
+		case '3' : 
+				if(level == 7){
+			   		afficheGrandPrix(&tabResultsGP);
+			   		break;
+				}   	
+		default  : 
+				showMainMenu(level, date_time); 
+				break;
+	}
 }
 
-void afficheTrials(){
+void afficheTrials(TTabQT *ResultsT1, TTabQT *ResultsT2, TTabQT *ResultsT3){
 
 }
 
-void afficheQualif(){
+void afficheQualif(TTabQT *ResultsQ1, TTabQT *ResultsQ2, TTabQT *ResultsQ3){
 
 }
 
-void afficheGrandPrix(){
+void afficheGrandPrix(TTabGP *ResultsGP){
 
 }

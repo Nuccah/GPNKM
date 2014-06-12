@@ -21,6 +21,13 @@ int main (int argc, char *argv[])
 	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
 	int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), IPC_CREAT | PERMS); // Creation com display server shm
 
+	// File Parameters
+	/* Time Function for filename definition */
+	time_t now = time(NULL);
+	struct tm *time = localtime(&now);
+	char date_time[30];
+	strftime(date_time,sizeof(date_time),"%d%m%y_%H%M%S", time);
+
 	pid_t process_id = fork(); // Premier Fork (Server, Afficheur)
 	if (process_id < 0) {
 		perror("Error while attempting Fork (Server/Afficheur de Resultat)");
@@ -30,7 +37,7 @@ int main (int argc, char *argv[])
 	//Afficheur (Parent)//
 	else if (process_id > 0){
 		int level = 0;
-		showMainMenu(level);
+		showMainMenu(level, date_time);
 	} 
 	/*Tampon Serveur (Child)*/
 	else{
@@ -66,7 +73,7 @@ int main (int argc, char *argv[])
 		//Pilots (Child)//
 		else if (process_id == 0) forkPilots(); // Pilot forking function
 		//Server (Parent)
-		else server(); // Main server function
+		else server(date_time); // Main server function
 
 		for(r = 0; r < 22; r++){
 			if(semGet(sem_race, r) != 1) semReset(sem_race, r);

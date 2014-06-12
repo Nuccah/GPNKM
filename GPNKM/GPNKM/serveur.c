@@ -9,7 +9,7 @@ int randomWeather(){
 	return (rand() % 3 + 5); // Here we want a random number between 5 and 7 so N = 3 and m = 5
 }
 
-void server(){
+void server(char *date_time){
     // INIT SECTION
   
     key_t sem_type_key = ftok(PATH, TYPE);
@@ -34,19 +34,10 @@ void server(){
 	key_t shm_race_key = ftok(PATH, RACESHM);
 	int shm_race = shmget(shm_race_key, 22*sizeof(TTabCar), S_IWUSR);
 	TTabCar *tabCar = (TTabCar *)shmat(shm_race, NULL, 0);
-
-	// File Parameters
-	int stream;
-	time_t now;
-	/* Time Function for filename definition */
-	now = time(NULL);
-	struct tm *time = localtime(&now);
-	char date_time[30];
-	strftime( date_time, sizeof(date_time), "%d%m%y_%H%M%S", time );
-	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH | O_TRUNC;
     
 	show_success("Server", "Initialisation complete");
 	int o;
+	int stream;
 	TOut tabOut[22];
 	for(o= 0; o<22; o++){	
 		tabOut[o].numPilot = -1;
@@ -277,6 +268,7 @@ void server(){
 					if(localStock.bestDriver.time > localStock.tabResult[k].timeLastLap) // if best lap time is bigger than timeLastLap 
 					{
 						localStock.bestDriver.time = localStock.tabResult[k].timeLastLap;
+						localStock.bestDriver.lnum = localStock.tabResult[k].lnum;
 						localStock.bestDriver.teamName = localStock.tabResult[k].teamName;
 						localStock.bestDriver.num = localStock.tabResult[k].num;
 					}
@@ -359,9 +351,11 @@ void server(){
     				  	break;	
     	}
 		show_success("Server", "Race terminated!");
-		if((stream = open(date_time, O_RDWR | O_CREAT, mode)) < 0){
+
+		if((stream = open(date_time, O_WRONLY | O_CREAT)) < 0){
 			perror("Error while opening/creating message.\n");
 		}
+		lseek(stream, 0, SEEK_END);
 		if(type == SIGGP){
 			TTabGP tabTmpGP;
 			for(i=0; i<22; i++){
@@ -373,16 +367,7 @@ void server(){
 				tabTmpGP.results[i].timeGlobal = tmpStock.tabResult[i].timeGlobal;
 				tabTmpGP.results[i].retired = tmpStock.tabResult[i].retired;
 			}
-			for(i=0;i<3;i++){
-				tabTmpGP.bestSect[i].num;
-				tabTmpGP.bestSect[i].teamName;
-				tabTmpGP.bestSect[i].snum;
-				tabTmpGP.bestSect[i].timeBestSect;
-			}
-			tabTmpGP.bestLap.num;
-			tabTmpGP.bestLap.teamName;
-			tabTmpGP.bestLap.lnum;
-			tabTmpGP.bestLap.timeBestLap;
+			tabTmpGP.bestLap = localStock.bestDriver;
 			write(stream,&tabTmpGP,sizeof(TTabGP)); 
 		}
 		else{
@@ -393,12 +378,6 @@ void server(){
 				tabTmpQT.results[i].teamName = tmpStock.tabResult[i].teamName;
 				tabTmpQT.results[i].timeBestLap = tmpStock.tabResult[i].bestLapTime;
 				tabTmpQT.results[i].retired = tmpStock.tabResult[i].retired;
-			}
-			for(i=0;i<3;i++){
-				tabTmpQT.bestSect[i].num  ;
-				tabTmpQT.bestSect[i].teamName  ;
-				tabTmpQT.bestSect[i].snum  ;
-				tabTmpQT.bestSect[i].timeBestSect  ;
 			}
 			write(stream,&tabTmpQT,sizeof(TTabQT));
 		}

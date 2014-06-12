@@ -11,7 +11,7 @@ bool isTabCarReadable(int sem_id);
 void endRace(int sig);
 
 // Main server function
-void server();
+void server(char *date_time);
 
 
 
