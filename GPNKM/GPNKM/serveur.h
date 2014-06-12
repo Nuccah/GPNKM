@@ -7,7 +7,7 @@ double lapTime(TSect *tabSect);
 double globalAverageSpeed(TCar pilot);
 double lapAverageSpeed(TLap lap);
 bool isTabCarReadable(int sem_id);
-
+int cmpTmp(TResults *a, TResults *b);
 
 void endRace(int sig);
 

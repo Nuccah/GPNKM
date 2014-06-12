@@ -39,7 +39,7 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 	// Send ready to server
 	//pilot->lapTimes = malloc(150*sizeof(TLap)); // Alloc sufficient laps for trial
 	sendReady(tabCar, numCell, pilot, sem_mutex); // Send ready to the server
-	waitSig(SIGSTART, sem_control, 0); // Wait for start signal
+	waitSig(SIGSTART, sem_race, numCell); // Wait for start signal
 	int i = 0;
 	int lap = 0;
 	bool isDamaged = false;
@@ -179,6 +179,8 @@ void pilot(int numCell, pid_t pid){
 		
 	do{
 		// Wait weather sig from server
+		while((semGet(sem_race, numCell) != SIGSELECT) && (!checkSig(SIGEXIT, sem_control, 0)));
+		if(checkSig(SIGEXIT, sem_control, 0)) goto eop;
 		while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 1);
 		pilot.tires = chooseTires(weather);
 		int race = 0;

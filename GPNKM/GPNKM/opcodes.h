@@ -30,6 +30,9 @@
 // GP sig
 #define SIGGP 16
 
+// Driver is selected for run
+#define SIGSELECT 17
+
 // Project number for sem/shm key generation + Path
 #define PATH "/dev/null"
 #define CONTROL 10

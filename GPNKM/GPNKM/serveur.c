@@ -37,11 +37,23 @@ void server(){
 
     
 	show_success("Server", "Initialisation complete");
+	int o;
+	TOut tabOut[22];
+	for(o= 0; o<22; o++){	
+		tabOut[o].numPilot = -1;
+		tabOut[o].numCell = -1; 
+	} 
 	// END INIT SECTION
 	do{
 		int i = 0, j;
 		TTabCar tabRead[22];
-
+		for(j = 0; j < 22; j++){
+			bool selected = true;
+			for(i=0; i < 22; i++){
+				if(tabOut[i].numCell == j) selected = false;
+			}
+			if(selected) sendSig(SIGSELECT, sem_race, j);
+		} 
 	    // Send weather to monitor and pilots
 		sendSig(randomWeather(), sem_control, 1);
 		// Wait race type from Monitor
@@ -64,24 +76,31 @@ void server(){
 			listStock->tabResult[j].pitstop = false;
 		}
 		semUp(sem_DispSrv, 0);
-		
+		int m;
 		// Wait for drivers ready
 		for(i = 0; i < 22; i++){ 
-			do{
-				while(semGet(sem_mutex, TMP1) != 1);
-				semDown(sem_mutex, TMP1);
-			    memcpy(&tabRead[i].teamName, &tabCar[i].teamName, sizeof(char *));
-			    memcpy(&tabRead[i].num, &tabCar[i].num, sizeof(int));
-			    memcpy(&tabRead[i].ready, &tabCar[i].ready, sizeof(bool));
-			    semUp(sem_mutex, TMP1);
+			bool selected = true;
+			for(m = 0; m < 22; m++){
+				if(tabOut[m].numCell == i) selected = false;
+			} 
+			if(selected){
+				do{
+					while(semGet(sem_mutex, TMP1) != 1);
+					semDown(sem_mutex, TMP1);
+				    memcpy(&tabRead[i].teamName, &tabCar[i].teamName, sizeof(char *));
+				    memcpy(&tabRead[i].num, &tabCar[i].num, sizeof(int));
+				    memcpy(&tabRead[i].ready, &tabCar[i].ready, sizeof(bool));
+				    semUp(sem_mutex, TMP1);
 
-				localStock.tabResult[i].teamName = tabRead[i].teamName;
-				localStock.tabResult[i].num = tabRead[i].num;
-				localStock.tabResult[i].timeGlobal = 0.0;
-				localStock.tabResult[i].timeLastLap = 0.0;
-				localStock.tabResult[i].lnum = 0;
-				localStock.tabResult[i].snum = 0;
-			}while(!tabRead[i].ready);
+					localStock.tabResult[i].teamName = tabRead[i].teamName;
+					localStock.tabResult[i].num = tabRead[i].num;
+					localStock.tabResult[i].timeGlobal = 0.0;
+					localStock.tabResult[i].timeLastLap = 0.0;
+					localStock.tabResult[i].lnum = 0;
+					localStock.tabResult[i].snum = 0;
+					localStock.tabResult[i].bestLapTime = 0.0;
+				}while(!tabRead[i].ready);
+			}
 		}
 	    while(semGet(sem_DispSrv, 0) != 1);
 		semDown(sem_DispSrv, 0);
@@ -94,31 +113,63 @@ void server(){
 		semReset(sem_control, 0);
 		semReset(sem_control, 1);
 		// Send start signal
-		sendSig(SIGSTART, sem_control, 0); 
 		double timeMax = 0.0;
 		switch(type){
-			case SIGTR1: timeMax = 5400.0;
+			case SIGTR1: 
+					timeMax = 5400.0;
+					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 		
 					break;
-			case SIGTR2: timeMax = 5400.0;
+			case SIGTR2: 
+					timeMax = 5400.0;
+					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 
 					break;
-			case SIGTR3: timeMax = 3600.0;
+			case SIGTR3: 
+					timeMax = 3600.0;
+					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 
 					break;
-			case SIGQU1: timeMax = 1100.0;
+			case SIGQU1: 
+					timeMax = 1100.0;
+					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 
 					break;
-			case SIGQU2: timeMax = 600.0;
+			case SIGQU2: 
+					timeMax = 600.0;
+					for(i = 0; i < 22; i++)	{
+						bool selected = true;
+						for(m = 0; m < 22; m++){
+							if(tabOut[m].numCell == i) selected = false;
+						} 
+						if(selected) sendSig(SIGSTART, sem_race, i);
+					} 
 					break;
-			case SIGQU3: timeMax = 800.0;
+			case SIGQU3: 
+					timeMax = 800.0;
+					for(i = 0; i < 22; i++)	{
+						bool selected = true;
+						for(m = 0; m < 22; m++){
+							if(tabOut[m].numCell == i) selected = false;
+						} 
+						if(selected) sendSig(SIGSTART, sem_race, i);
+					} 
 					break;
 		}
 		semReset(sem_type, 0);
 		bool finished = false;
 		bool tabFinished[22];
-		for(i = 0; i < 22; i++) tabFinished[i] = false;
+		bool tabSelected[22];
+		for(i = 0; i < 22; i++){
+			tabFinished[i] = false;
+			bool selected = true;
+			for(m = 0; m < 22; m++){
+				if(tabOut[m].numCell == i) selected = false;
+			}
+			tabSelected[i] = selected; 
+		}
 		int currentLap = 0;
 		int tmpLap = 0, tmpSec = 0, k, nbFinished = 0;
 		do {
 			sleep(0.2);
 			for(k = 0; k < 22; k++){
+				if(tabSelected[k]){
 					tmpLap = localStock.tabResult[k].lnum;
 					tmpSec = localStock.tabResult[k].snum;
 
@@ -140,8 +191,12 @@ void server(){
 						if(tmpSec != tabRead[k].snum){
 							for(j=tmpSec; j <= tabRead[k].snum; j++)
 							{
-								if(localStock.tabResult[k].snum == 2) 
+								if(localStock.tabResult[k].snum == 2) {
 									localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tmpLap].tabSect);
+									if(localStock.tabResult[k].bestLapTime > localStock.tabResult[k].timeLastLap){
+										localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
+									}
+								}
 								localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[tmpLap].tabSect[j].stime;
 							}
 						}
@@ -151,22 +206,34 @@ void server(){
 						for(i=tmpLap; i <=tabRead[k].lnum; i++){
 							if(i == tmpLap){
 								for(j=tmpSec; j<=2; j++){
-									if(localStock.tabResult[k].snum == 2) 
+									if(localStock.tabResult[k].snum == 2) {
 										localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[i].tabSect);
+										if(localStock.tabResult[k].bestLapTime > localStock.tabResult[k].timeLastLap){
+											localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
+										}
+									}
 									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
 								}
 							}
 							else if(i == tabRead[k].lnum){
 								for(j=0; j<=tabRead[k].snum; j++){
-									if(localStock.tabResult[k].snum == 2) 
+									if(localStock.tabResult[k].snum == 2) {
 										localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[i].tabSect);
+										if(localStock.tabResult[k].bestLapTime > localStock.tabResult[k].timeLastLap){
+											localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
+										}
+									}
 									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
 								}
 							}
 							else{
 								for(j=0; j<=2; j++){
-									if(localStock.tabResult[k].snum == 2) 
+									if(localStock.tabResult[k].snum == 2){ 
 										localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[i].tabSect);
+										if(localStock.tabResult[k].bestLapTime > localStock.tabResult[k].timeLastLap){
+											localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
+										}
+									}
 									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
 								}
 							}
@@ -196,20 +263,24 @@ void server(){
 				  	while(semGet(sem_DispSrv, 0) != 1);
 					semDown(sem_DispSrv, 0);
 					memcpy(&listStock->tabResult[k], &localStock.tabResult[k], sizeof(TResults));
+					memcpy(&listStock->bestDriver, &localStock.bestDriver, sizeof(TBest));
 					semUp(sem_DispSrv, 0);
-					if((type == SIGGP) && (localStock.tabResult[k].lnum >= LAPGP)) goto end;
-					if((type != SIGGP) && (localStock.tabResult[k].timeGlobal >= timeMax) && (!tabFinished[k])){
+					if((type == SIGGP) && (localStock.tabResult[k].lnum >= LAPGP)) finished = true;
+					if((type != SIGGP) && ((localStock.tabResult[k].retired) || (localStock.tabResult[k].timeGlobal >= timeMax)) 
+						&& (!tabFinished[k])){
 						sendSig(SIGEND, sem_race, k);
 						nbFinished++; 
 						tabFinished[k] = true;
 						if(nbFinished == 22) finished = true;
 					}
+				}
 			}    
 		} while(!finished);
-		goto next;
-		end: // Terminate GP and send all last informations to monitor
+
+		if(type == SIGGP){ // Terminate GP and send all last informations to monitor
 			sendSig(SIGEND, sem_control, 0);
-	    next:
+		}
+	    else{
 	    	//semReset(sem_mutex, TMP1);
 	    	show_notice("Server", "Waiting last drivers informations and end of run");
 	    	int s;
@@ -225,6 +296,39 @@ void server(){
 	    	for(s = 0; s<22; s++) semReset(sem_race, s);
 	    	sendSig(SIGEND, sem_control, 0);
 	    	show_success("Server", "Race terminated!");
+	    	TSharedStock tmpStock;
+	    	tmpStock = localStock;
+	    	// qsort DEREK
+	    	if(type != SIGGP) qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpTmp);
+	    	else ;
+	    	// Write into file
+	    	switch(type){
+	    		case SIGQU1 : 
+	    					for(i==21; i>14; i--){ 
+	    						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
+	    						for(s=0; s<22; s++){
+	    							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
+	    						}
+	    					}
+	    				  	break;	    					
+	    		case SIGQU2 : 
+	    					for(i==14; i>7; i--) {
+	    						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
+	    						for(s=0; s<22; s++){
+	    							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
+	    						}
+	    					}
+	    				  	break;	
+	    		case SIGQU3 : 
+	    					for(i==7; i>=0; i--) {
+	    						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
+	    						for(s=0; s<22; s++){
+	    							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
+	    						}
+	    					}
+	    				  	break;	
+	    	}
+	    }
 	}while(!checkSig(SIGEXIT, sem_control, 0));
 	eop:
 		shmdt(&shm_race);
@@ -257,3 +361,12 @@ void endRace(int sig){
 	sendSig(SIGEND, sem_control, 0);
 }
 
+int cmpTmp(TResults *a, TResults *b){
+	if(a->bestLapTime == b->bestLapTime){
+		if(a->timeGlobal > b->timeGlobal) return 1;
+		else if(a->timeGlobal < b->timeGlobal) return -1;
+		else return 0;
+	}
+	else if(a->bestLapTime > b->bestLapTime) return 1;
+	else return -1;
+}

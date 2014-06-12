@@ -85,10 +85,16 @@ typedef struct TResults{
 	int lnum;
 	int snum;
 	double timeLastLap;
+	double bestLapTime;
 	double timeGlobal;
 	bool retired; /* is retired (true) */
 	bool pitstop; 
 } TResults;
+
+typedef struct TOut{
+	int numPilot;
+	int numCell;		
+} TOut;
 
 typedef struct TBest{
 	int num;
