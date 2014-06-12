@@ -55,8 +55,7 @@ void scoreMonitor(int sem_control, int type){
 	showMainMenu();
 }
 
-void showTRMenu(int sem_control, int sem_type)
-{
+void showTRMenu(int sem_control, int sem_type){
 	system ( "clear" );
 	printf("\033[36m");
 	printf ("Trial Runs!\n");
@@ -93,8 +92,7 @@ void showTRMenu(int sem_control, int sem_type)
 	}
 }
 
-void showQualifMenu(int sem_control,  int sem_type)
-{
+void showQualifMenu(int sem_control,  int sem_type){
 	system ( "clear" );
 	printf("\033[36m");
 	printf ("Welcome to the worldest famous GPNKM!\n");
@@ -131,32 +129,7 @@ void showQualifMenu(int sem_control,  int sem_type)
 	} 
 }
 
-void endOfProgram(int sem_control, int sem_type)
-{
-	key_t sem_DispSrv_key = ftok(PATH, STOCK);
-	int sem_DispSrv = semget(sem_DispSrv_key, 1, IPC_CREAT | PERMS);
-	sendSig(SIGEXIT, sem_control, 0);
-	sleep(1);
-	semctl(sem_type, 0, IPC_RMID, NULL);
-	semctl(sem_DispSrv, 0, IPC_RMID, NULL);
-	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
-	int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), S_IRUSR | S_IWUSR);
-	shmctl(shm_DispSrv, IPC_RMID, NULL);
-	show_success("Monitor", "All processes closed successfully\nThanks for your presence at GPNKM championship");
-	semctl(sem_control, 0, IPC_RMID, NULL);
-}
-
-void weatherMsg(int number){
-	switch( number ) {
-    	case SIGRAIN: printf("It's a rainy day at the normally dry GPNKM track, drivers should prepare for a tough weekend!\n"); break;
-    	case SIGWET: printf("The weather has been off and on, drivers need to be ready for a wet circuit!\n"); break;
-    	case SIGDRY: printf("It's a beautiful day at the GPNKM circuit, it is time to DRIVE!\n"); break;
-	}
-	return;
-}
-
-void showMainMenu()
-{
+void showMainMenu(){
 	key_t sem_type_key = ftok(PATH, TYPE);
 	int sem_type = semget(sem_type_key, 1, IPC_CREAT | PERMS);
 	
@@ -200,4 +173,43 @@ void showMainMenu()
 			showMainMenu(); 
 			break;
 	}
+}
+
+void endOfProgram(int sem_control, int sem_type){
+	key_t sem_DispSrv_key = ftok(PATH, STOCK);
+	int sem_DispSrv = semget(sem_DispSrv_key, 1, IPC_CREAT | PERMS);
+	sendSig(SIGEXIT, sem_control, 0);
+	sleep(1);
+	semctl(sem_type, 0, IPC_RMID, NULL);
+	semctl(sem_DispSrv, 0, IPC_RMID, NULL);
+	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
+	int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), S_IRUSR | S_IWUSR);
+	shmctl(shm_DispSrv, IPC_RMID, NULL);
+	show_success("Monitor", "All processes closed successfully\nThanks for your presence at GPNKM championship");
+	semctl(sem_control, 0, IPC_RMID, NULL);
+}
+
+void weatherMsg(int number){
+	switch( number ) {
+    	case SIGRAIN: printf("It's a rainy day at the normally dry GPNKM track, drivers should prepare for a tough weekend!\n"); break;
+    	case SIGWET: printf("The weather has been off and on, drivers need to be ready for a wet circuit!\n"); break;
+    	case SIGDRY: printf("It's a beautiful day at the GPNKM circuit, it is time to DRIVE!\n"); break;
+	}
+	return;
+}
+
+void afficheResultats(){
+
+}
+
+void afficheTrials(){
+
+}
+
+void afficheQualif(){
+
+}
+
+void afficheGrandPrix(){
+
 }

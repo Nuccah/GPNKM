@@ -107,6 +107,49 @@ typedef struct TSharedStock{
 	TBest bestDriver;
 } TSharedStock;
 
+typedef struct TWriteQT{
+	int pos;
+	int num;
+	const char * teamName;
+	double timeBestLap;
+	bool retired;
+} TWriteQT;
+
+typedef struct TWriteGP{
+	int pos;
+	int num;
+	int lnum;
+	const char * teamName;
+	double timeGlobal;
+	double timeBestLap;
+	bool retired;
+} TWriteGP;
+
+typedef struct TWriteBestSect{
+	int num;
+	const char * teamName;
+	int snum;
+	double timeBestSect;
+} TWriteBestSect;
+
+typedef struct TWriteBestLap{
+	int num;
+	const char * teamName;
+	int lnum;
+	double timeBestLap;
+} TWriteBestLap;
+
+typedef struct TTabQT{
+	TWriteQT results[22];
+	TWriteBestSect bestSect[3];
+} TTabQT;
+
+typedef struct TTabGP{
+	TWriteGP results[22];
+	TWriteBestSect bestSect[3];
+	TWriteBestLap bestLap;
+} TTabGP;
+
 // To use when you are going to work in shared memo
 void semDown(int sem_id, int sem_channel);
 
