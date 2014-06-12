@@ -185,7 +185,7 @@ void server(){
 						if(localStock.tabResult[k].num < 10) printf("[Server 0%d] ", localStock.tabResult[k].num);
 						else printf("[Server %d] ", localStock.tabResult[k].num);		
 						if(tabRead[k].lnum < 10) printf(" | Lap 0%d: %6.2lf sec", tabRead[k].lnum, localStock.tabResult[k].timeLastLap);
-						else printf(" | Lap %d: %6.2lf sec", tabRead[k].lnum, localStock.tabResult[k].timeLastLap);
+						else printf(" | Lap %d: %6.2lf sec", localStock.tabResult[k].lnum, localStock.tabResult[k].timeLastLap);
 						printf(" | Global: %10.2lf sec", localStock.tabResult[k].timeGlobal);
 						printf(" | Retired? %3s", localStock.tabResult[k].retired ? "yes" : "no");
 						printf(" | Pitstop? %3s", localStock.tabResult[k].pitstop ? "yes" : "no");	
@@ -195,12 +195,7 @@ void server(){
 				  	// write into the shared mem for monitor
 				  	while(semGet(sem_DispSrv, 0) != 1);
 					semDown(sem_DispSrv, 0);
-					memcpy(&listStock->tabResult[k].retired, &localStock.tabResult[k].retired, sizeof(bool));
-					memcpy(&listStock->tabResult[k].pitstop, &localStock.tabResult[k].pitstop, sizeof(bool));
-					memcpy(&listStock->tabResult[k].timeLastLap, &localStock.tabResult[k].timeLastLap, sizeof(double));
-					memcpy(&listStock->tabResult[k].timeGlobal, &localStock.tabResult[k].timeGlobal, sizeof(double));
-					memcpy(&listStock->tabResult[k].lnum, &localStock.tabResult[k].lnum, sizeof(int));
-					memcpy(&listStock->tabResult[k].snum, &localStock.tabResult[k].snum, sizeof(int));
+					memcpy(&listStock->tabResult[k], &localStock.tabResult[k], sizeof(TResults));
 					semUp(sem_DispSrv, 0);
 					if((type == SIGGP) && (localStock.tabResult[k].lnum >= LAPGP)) goto end;
 					if((type != SIGGP) && (localStock.tabResult[k].timeGlobal >= timeMax) && (!tabFinished[k])){

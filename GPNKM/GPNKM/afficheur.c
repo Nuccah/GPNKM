@@ -24,19 +24,10 @@ void scoreMonitor(int sem_control, int type){
 	do{
 		if(checkSig(SIGEND, sem_control, 0)) finished = true;
 		else{
-			for(k=0; k<22; k++){
-				while(semGet(sem_DispSrv, 0)  != 1);
-				semDown(sem_DispSrv, 0);
-				memcpy(&localStock.tabResult[k].retired, &listStock->tabResult[k].retired, sizeof(bool));
-				memcpy(&localStock.tabResult[k].pitstop, &listStock->tabResult[k].pitstop, sizeof(bool));
-				memcpy(&localStock.tabResult[k].timeLastLap, &listStock->tabResult[k].timeLastLap, sizeof(double));
-				memcpy(&localStock.tabResult[k].timeGlobal, &listStock->tabResult[k].timeGlobal, sizeof(double));
-				memcpy(&localStock.tabResult[k].lnum, &listStock->tabResult[k].lnum, sizeof(int));
-				memcpy(&localStock.tabResult[k].snum, &listStock->tabResult[k].snum, sizeof(int));
-				memcpy(&localStock.tabResult[k].teamName, &listStock->tabResult[k].teamName, sizeof(char *));
-				memcpy(&localStock.tabResult[k].num, &listStock->tabResult[k].num, sizeof(int));
-				semUp(sem_DispSrv, 0);
-			}
+			while(semGet(sem_DispSrv, 0) != 1);
+			semDown(sem_DispSrv, 0);
+			memcpy(&localStock, listStock, sizeof(TSharedStock));
+			semUp(sem_DispSrv, 0);
 			if(DISPMODE == 0){
 				qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpfunct);
 				int i;
