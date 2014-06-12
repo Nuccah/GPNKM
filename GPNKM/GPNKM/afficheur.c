@@ -81,7 +81,7 @@ void showTRMenu(int sem_control, int sem_type, int level){
 	{
 		case '1' :
 				fflush(stdin); 
-				if (level == 3){
+				if (level == 0){
 					show_notice("Monitor", "Trial 1 is going to begin");
 				    sendSig(SIGTR1, sem_type, 0);
 				    scoreMonitor(sem_control, SIGTR1, level);
@@ -89,7 +89,7 @@ void showTRMenu(int sem_control, int sem_type, int level){
 				}
 		case '2' : 
 				fflush(stdin);
-				if (level == 3){
+				if (level == 1){
 					show_notice("Monitor", "Trial 2 is going to begin");
 				    sendSig(SIGTR2, sem_type, 0);
 				    scoreMonitor(sem_control, SIGTR2, level);
@@ -97,7 +97,7 @@ void showTRMenu(int sem_control, int sem_type, int level){
 				}
 		case '3' : 
 				fflush(stdin);
-				if (level == 3){
+				if (level == 2){
 					show_notice("Monitor", "Trial 3 is going to begin");
 				    sendSig(SIGTR3, sem_type, 0);
 				    scoreMonitor(sem_control, SIGTR3, level);
@@ -212,12 +212,15 @@ void endOfProgram(int sem_control, int sem_type){
 	int sem_DispSrv = semget(sem_DispSrv_key, 1, IPC_CREAT | PERMS);
 	sendSig(SIGEXIT, sem_control, 0);
 	sleep(1);
+	if(semGet(sem_type, 0) != 1) semReset(sem_type, 0);
 	semctl(sem_type, 0, IPC_RMID, NULL);
+	if(semGet(sem_DispSrv, 0) != 1) semReset(sem_DispSrv, 0);
 	semctl(sem_DispSrv, 0, IPC_RMID, NULL);
 	key_t shm_DispSrv_key = ftok(PATH, STOCKSHM);
 	int shm_DispSrv = shmget(shm_DispSrv_key, sizeof(TSharedStock), S_IRUSR | S_IWUSR);
 	shmctl(shm_DispSrv, IPC_RMID, NULL);
 	show_success("Monitor", "All processes closed successfully\nThanks for your presence at GPNKM championship");
+	if(semGet(sem_control, 0) != 1) semReset(sem_control, 0);
 	semctl(sem_control, 0, IPC_RMID, NULL);
 }
 

@@ -68,13 +68,22 @@ int main (int argc, char *argv[])
 		//Server (Parent)
 		else server(); // Main server function
 
-		for(r = 0; r < 22; r++) semctl(sem_race, r, IPC_RMID, NULL);
+		for(r = 0; r < 22; r++){
+			if(semGet(sem_race, r) != 1) semReset(sem_race, r);
+		 	semctl(sem_race, r, IPC_RMID, NULL);
+
+		 }
+		if(semGet(sem_mutex, 0) != 1) semReset(sem_mutex, 0);
 		semctl(sem_mutex, 0, IPC_RMID, NULL);
+		if(semGet(sem_type, 0) != 1) semReset(sem_type, 0);
 		semctl(sem_type, 0, IPC_RMID, NULL);
+		if(semGet(sem_control, 0) != 1) semReset(sem_control, 0);
+		if(semGet(sem_control, 1) != 1) semReset(sem_control, 1);
 		semctl(sem_control, 0, IPC_RMID, NULL);
 		semctl(sem_control, 1, IPC_RMID, NULL);
 		shmctl(shm_race, IPC_RMID, NULL);
 		shmctl(shm_DispSrv, IPC_RMID, NULL);
+		if(semGet(sem_DispSrv, 0) != 1) semReset(sem_DispSrv, 0);
 		semctl(sem_DispSrv, 0, IPC_RMID, NULL);
 	}
 	return EXIT_SUCCESS;

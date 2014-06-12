@@ -171,6 +171,13 @@ void server(){
 					} 
 					maxCar = 8;
 					break;
+			case SIGGP:
+					sendSig(SIGSTART, sem_control, 0);
+					for(i = 0; i < 22; i++){
+						sendSig(SIGSTART, sem_race, tabOut[i].numCell);
+						usleep(500);
+					}
+					break;
 		}
 		semReset(sem_type, 0);
 		bool finished = false;
@@ -189,7 +196,7 @@ void server(){
 		do {
 			sleep(0.2);
 			for(k = 0; k < 22; k++){
-				if(tabSelected[k]){
+				if((tabSelected[k]) || (type == SIGGP)){
 					tmpLap = localStock.tabResult[k].lnum;
 					tmpSec = localStock.tabResult[k].snum;
 
@@ -211,6 +218,7 @@ void server(){
 						if(tmpSec != tabRead[k].snum){
 							for(j=tmpSec; j <= tabRead[k].snum; j++)
 							{
+								
 								if(localStock.tabResult[k].snum == 2) {
 									localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tmpLap].tabSect);
 									if((localStock.tabResult[k].bestLapTime > localStock.tabResult[k].timeLastLap) &&
@@ -304,7 +312,6 @@ void server(){
 		if(type == SIGGP){ // Terminate GP and send all last informations to monitor
 			sendSig(SIGEND, sem_control, 0);
 		}
-    	//semReset(sem_mutex, TMP1);
     	show_notice("Server", "Waiting last drivers informations and end of run");
     	int s;
     	for(s=0; s<22; s++){
@@ -321,8 +328,6 @@ void server(){
     	TSharedStock tmpStock;
     	memcpy(&tmpStock, &localStock, sizeof(TSharedStock));
     	if(type == SIGGP) qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpGP);
-
-    	// Write into file
 
     	switch(type){
     		case SIGQU1 :
@@ -359,14 +364,14 @@ void server(){
 		}
 		if(type == SIGGP){
 			TTabGP tabTmpGP;
-			for(i==0; i<22; i++){
-				tabTmpGP.results[i].pos = i;
-				tabTmpGP.results[i].num = localStock.tabResult[i].num;
-				tabTmpGP.results[i].lnum = localStock.tabResult[i].lnum;
-				tabTmpGP.results[i].teamName = localStock.tabResult[i].teamName;
-				tabTmpGP.results[i].timeBestLap = localStock.tabResult[i].bestLapTime;
-				tabTmpGP.results[i].timeGlobal = localStock.tabResult[i].timeGlobal;
-				tabTmpGP.results[i].retired = localStock.tabResult[i].retired;
+			for(i=0; i<22; i++){
+				tabTmpGP.results[i].pos = i+1;
+				tabTmpGP.results[i].num = tmpStock.tabResult[i].num;
+				tabTmpGP.results[i].lnum = tmpStock.tabResult[i].lnum + 1;
+				tabTmpGP.results[i].teamName = tmpStock.tabResult[i].teamName;
+				tabTmpGP.results[i].timeBestLap = tmpStock.tabResult[i].bestLapTime;
+				tabTmpGP.results[i].timeGlobal = tmpStock.tabResult[i].timeGlobal;
+				tabTmpGP.results[i].retired = tmpStock.tabResult[i].retired;
 			}
 			for(i=0;i<3;i++){
 				tabTmpGP.bestSect[i].num;
@@ -383,11 +388,11 @@ void server(){
 		else{
 			TTabQT tabTmpQT; 
 			for(i=0; i<22; i++){
-				tabTmpQT.results[i].pos = i;
-				tabTmpQT.results[i].num = localStock.tabResult[i].num;
-				tabTmpQT.results[i].teamName = localStock.tabResult[i].teamName;
-				tabTmpQT.results[i].timeBestLap = localStock.tabResult[i].bestLapTime;
-				tabTmpQT.results[i].retired = localStock.tabResult[i].retired;
+				tabTmpQT.results[i].pos = i+1;
+				tabTmpQT.results[i].num = tmpStock.tabResult[i].num;
+				tabTmpQT.results[i].teamName = tmpStock.tabResult[i].teamName;
+				tabTmpQT.results[i].timeBestLap = tmpStock.tabResult[i].bestLapTime;
+				tabTmpQT.results[i].retired = tmpStock.tabResult[i].retired;
 			}
 			for(i=0;i<3;i++){
 				tabTmpQT.bestSect[i].num  ;
@@ -402,14 +407,22 @@ void server(){
 	eop:
 		shmdt(&shm_race);
 		shmdt(&shm_DispSrv);
+		if(semGet(sem_mutex, 0) != 1) semReset(sem_mutex, 0);
+		if(semGet(sem_type, 0) != 1) semReset(sem_type, 0);
+		if(semGet(sem_control, 0) != 1) semReset(sem_control, 0);
+		if(semGet(sem_control, 1) != 1) semReset(sem_control, 1);
 		semctl(sem_mutex, TMP1, IPC_RMID, NULL);
 		semctl(sem_type, 0, IPC_RMID, NULL);
 		semctl(sem_control, 0, IPC_RMID, NULL);
 		semctl(sem_control, 1, IPC_RMID, NULL);
 		int t;
-		for(t = 0; t < 22; t++) semctl(sem_race, t, IPC_RMID, NULL);
+		for(t = 0; t < 22; t++) {
+			if(semGet(sem_race, t) != 1) semReset(sem_race, t);
+			semctl(sem_race, t, IPC_RMID, NULL);
+		}
 		shmctl(shm_race, IPC_RMID, NULL);
 		shmctl(shm_DispSrv, IPC_RMID, NULL);
+		if(semGet(sem_mutex, 0) != 1) semReset(sem_mutex, 0);
 		semctl(sem_DispSrv, 0, IPC_RMID, NULL);
 		return;
 }

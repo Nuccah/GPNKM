@@ -2,13 +2,6 @@
 #define H_STRUCTURES
 #include "constants.h"
 
-
-/* F1 car variables 
-	speed = ;
-	fuel = ;
-	twear = ;
-*/
-
 /* sector type */
 typedef struct TSect {
 	double stime; /* Time spent in one sector */
@@ -48,10 +41,10 @@ typedef struct TTabCar {
 	int snum;
 	int lnum;
 	double avgSpeed; /* Average speed in real time */
-	TLap lapTimes[300]; /* it's a pointer because laps number depends of the race type (I suppose ^^) */
+	TLap lapTimes[75]; /* it's a pointer because laps number depends of the race type (I suppose ^^) */
 } TTabCar;
  
-//TODO complete all the race types!
+//DELETE ALL 
 /* Trial type */
 typedef struct TTrial {
  	int weather;
@@ -71,7 +64,7 @@ typedef struct TGP {
 	int weather;
 	TCar carList[24];
 } TGP;
-
+//DELETE ALL END
 /* Podium type */
 typedef struct TPod {
 	TCar first;

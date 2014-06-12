@@ -20,14 +20,14 @@
 
 /* Change this to see more debug info: 
 * 0 -> NO MSG INFO
-* 1 -> ERROR INFO 
+* 1 -> NOTICE INFO
 * 2 -> SUCCESS INFO
-* 3 -> NOTICE INFO
+* 3 -> ERROR INFO
 * 4 -> DEBUG INFO (All messages)
 * Default is 4
 * Recommended max level for prod is 2.
 */
-#define LOGLVL 4 
+#define LOGLVL 2 
 
 /* Change this to see different process at the screen:
 * 0 -> Monitor

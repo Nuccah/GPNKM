@@ -7,6 +7,8 @@ int forkPilots(){
 	key_t sem_pitstop_key = ftok(PATH, PIT); // Sema Key generated
 	int sem_pitstop = semget(sem_pitstop_key, 11, IPC_CREAT | PERMS); // sema ID containing 22 physical sema!!
 	for(i = 0; i < 11; i++) semReset(sem_pitstop, i);  // init all sema's at 1
+	key_t sem_control_key = ftok(PATH, CONTROL);
+	int sem_control = semget(sem_control_key, 2, IPC_CREAT | PERMS);
 
 	for(i=0;i<DRIVERS;i++){ // Multifork des 22 pilotes
 		pid = fork();
@@ -21,18 +23,22 @@ int forkPilots(){
           	pilot(i, pidNum);
        	}
     }
-	int status = 0;
-	waitpid(pid, &status, 0);
-	for(i=0; i<11; i++)	semctl(sem_pitstop, i, IPC_RMID, NULL);
+	while(!checkSig(SIGEXIT, sem_control, 0));
+	for(i=0; i<11; i++){
+		if(semGet(sem_pitstop, i) != 1) semReset(sem_pitstop, i);
+		semctl(sem_pitstop, i, IPC_RMID, NULL);
+	}
+	if(semGet(sem_control, 0) != 1) semReset(sem_control, 0);
+	if(semGet(sem_control, 1) != 1) semReset(sem_control, 1);
+	semctl(sem_control, 0, IPC_RMID, NULL);
+	semctl(sem_control, 1, IPC_RMID, NULL);	
 	exit(EXIT_SUCCESS);
 }
 
 void startRace(TTabCar *tabCar, int numCell, TCar *pilot, 
-				int sem_control, int weatherFactor, int sem_mutex, int sem_race)
+				int sem_control, int weatherFactor, int sem_mutex, int sem_race, int sem_pitstop)
 {
 	// INIT SECTION
-	key_t sem_pitstop_key = ftok(PATH, PIT);
-	int sem_pitstop = semget(sem_pitstop_key, 11, IPC_CREAT | PERMS);
 
 	int numPit = getPitstop(pilot->num);
 	// END INIT SECTION
@@ -153,7 +159,6 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 		i++;
 	}
 	sendOver(tabCar, numCell, pilot, sem_mutex);
-	semctl(sem_pitstop, numPit, IPC_RMID, NULL);
 }
 
 void pilot(int numCell, pid_t pid){	
@@ -169,6 +174,9 @@ void pilot(int numCell, pid_t pid){
 
 	key_t sem_mutex_key = ftok(PATH, MUTEX);
 	int sem_mutex = semget(sem_mutex_key, 1, IPC_CREAT | PERMS);
+
+	key_t sem_pitstop_key = ftok(PATH, PIT);
+	int sem_pitstop = semget(sem_pitstop_key, 11, IPC_CREAT | PERMS);
 
 	key_t shm_race_key = ftok(PATH, RACESHM);
 	int shm_race = shmget(shm_race_key, 22*sizeof(TTabCar), S_IWUSR);
@@ -204,17 +212,29 @@ void pilot(int numCell, pid_t pid){
 		memcpy(&tabCar[numCell].snum, &pilot.snum, sizeof(int));
 		semUp(sem_mutex, TMP1);
 
-		startRace(tabCar, numCell, &pilot, sem_control, weather, sem_mutex, sem_race);
+		startRace(tabCar, numCell, &pilot, sem_control, weather, sem_mutex, sem_race, sem_pitstop);
 	}while(!checkSig(SIGEXIT, sem_control, 0));
 	eop:
 		shmdt(&shm_race);
+		if(semGet(sem_type, 0) != 1) semReset(sem_type, 0);
 		semctl(sem_type, 0, IPC_RMID, NULL);
+		if(semGet(sem_control, 0) != 1) semReset(sem_control, 0);
+		if(semGet(sem_control, 1) != 1) semReset(sem_control, 1);
 		semctl(sem_control, 0, IPC_RMID, NULL);
 		semctl(sem_control, 1, IPC_RMID, NULL);
+		if(semGet(sem_mutex, 0) != 1) semReset(sem_mutex, 0);
 		semctl(sem_mutex, 0, IPC_RMID, NULL);
-		semctl(sem_race, numCell, IPC_RMID, NULL);
+		int i;
+		for(i = 0; i < 22; i++){
+			if(semGet(sem_race, i) != 1) semReset(sem_race, i);
+			semctl(sem_race, i, IPC_RMID, NULL);
+		} 
+		for(i = 0; i < 11; i++){
+			if(semGet(sem_pitstop, i) != 1) semReset(sem_pitstop, i);
+			semctl(sem_pitstop, i, IPC_RMID, NULL);
+		}		
 		shmctl(shm_race, IPC_RMID, NULL);
-		return;
+		exit(EXIT_SUCCESS);
 }
 
 bool crashed(){
