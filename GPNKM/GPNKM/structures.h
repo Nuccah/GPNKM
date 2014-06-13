@@ -82,6 +82,7 @@ typedef struct TResults{
 	double timeGlobal;
 	bool retired; /* is retired (true) */
 	bool pitstop; 
+	bool selected;
 } TResults;
 
 typedef struct TOut{

@@ -64,13 +64,17 @@ int getSig(int sem_id, int sem_channel){
 
 // Compare on best lap times
 int cmpQual(TResults *a, TResults *b){
-	if(a->bestLapTime == b->bestLapTime){
-		if(a->timeGlobal > b->timeGlobal) return 1;
-		else if(a->timeGlobal < b->timeGlobal) return -1;
-		else return 0;
+	if(a->selected && !b->selected) return 1;
+	else if(!a->selected && b->selected) return -1;
+	else{
+		if(a->bestLapTime == b->bestLapTime){
+			if(a->timeGlobal > b->timeGlobal) return 1;
+			else if(a->timeGlobal < b->timeGlobal) return -1;
+			else return 0;
+		}
+		else if(a->bestLapTime > b->bestLapTime) return 1;
+		else return -1;
 	}
-	else if(a->bestLapTime > b->bestLapTime) return 1;
-	else return -1;
 }
 
 // Compare on global time and lap numbers

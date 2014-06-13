@@ -183,6 +183,7 @@ void server(char *date_time){
 				if(tabOut[m].numCell == i) selected = false;
 			}
 			tabSelected[i] = selected; 
+			localStock.tabResult[i].selected = selected;
 		}
 		int currentLap = 0;
 		int tmpLap = 0, tmpSec = 0, k, nbFinished = 0;
@@ -319,11 +320,10 @@ void server(char *date_time){
     	for(s = 0; s<22; s++) semReset(sem_race, s);
     	sendSig(SIGEND, sem_control, 0);
     	TSharedStock tmpStock;
-    	memcpy(&tmpStock, &localStock, sizeof(TSharedStock));
-    	if(type == SIGGP) qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpGP);
 
     	switch(type){
     		case SIGQU1 :
+    					memcpy(&tmpStock, &localStock, sizeof(TSharedStock));
     					qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpQual); 
     					for(i=21; i>14; i--){ 
     						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
@@ -333,7 +333,12 @@ void server(char *date_time){
     					}
     				  	break;	    					
     		case SIGQU2 :
-    					qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpQual);
+						for(i = 0; i<22; i++){
+							for(s=0; s<22; s++){
+								if(localStock.tabResult[s].selected) memcpy(&tmpStock.tabResult[i], &localStock.tabResult[i], sizeof(TResults));
+							}
+						} 
+    					qsort(tmpStock.tabResult, 15, sizeof(TResults), (int (*)(const void*, const void*))cmpQual);
     					for(i=14; i>7; i--) {
     						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
     						for(s=0; s<22; s++){
@@ -342,7 +347,12 @@ void server(char *date_time){
     					}
     				  	break;	
     		case SIGQU3 :
-    					qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpQual); 
+						for(i = 0; i<22; i++){
+							for(s=0; s<22; s++){
+								if(localStock.tabResult[s].selected) memcpy(&tmpStock.tabResult[i], &localStock.tabResult[i], sizeof(TResults));
+							}
+						} 
+    					qsort(tmpStock.tabResult, 8, sizeof(TResults), (int (*)(const void*, const void*))cmpQual); 
     					for(i=7; i>=0; i--) {
     						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
     						for(s=0; s<22; s++){
@@ -350,6 +360,9 @@ void server(char *date_time){
     						}
     					}
     				  	break;	
+    		case SIGGP:
+						qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpGP);
+						break;
     	}
 		show_success("Server", "Race terminated!");
 

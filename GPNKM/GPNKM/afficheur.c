@@ -33,7 +33,6 @@ void scoreMonitor(int sem_control, int type, int level, char *date_time){
 	do{
 		if(checkSig(SIGEND, sem_control, 0)) finished = true;
 		else{
-			//while(semGet(sem_DispSrv, 0) != 1);
 			semDown(sem_DispSrv, 0);
 			memcpy(&localStock, listStock, sizeof(TSharedStock));
 			semUp(sem_DispSrv, 0);
@@ -51,7 +50,9 @@ void scoreMonitor(int sem_control, int type, int level, char *date_time){
 							localStock.tabResult[i].lnum, localStock.tabResult[i].timeGlobal,
 							localStock.tabResult[i].bestLapTime, localStock.tabResult[i].timeLastLap);
 					printf("Retired : %3s", localStock.tabResult[i].retired ? "yes" : "no");
-					printf(" | Pitstop : %3s\n", localStock.tabResult[i].pitstop ? "yes" : "no");
+					printf(" | Pitstop : %3s", localStock.tabResult[i].pitstop ? "yes" : "no");
+					printf(" | Selected: %3s", localStock.tabResult[i].selected ? "yes" : "no");
+					printf("\n");
 				}					
 			}
 			sleep(1);
