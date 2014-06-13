@@ -221,13 +221,17 @@ void server(char *date_time){
 						if(tmpSec != tabRead[k].snum){
 							for(j=tmpSec; j <= tabRead[k].snum; j++)
 							{
-								
 								if(localStock.tabResult[k].snum == 2) {
 									localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tmpLap].tabSect);
 									if((localStock.tabResult[k].bestLapTime > localStock.tabResult[k].timeLastLap) &&
 										(localStock.tabResult[k].timeLastLap != 0.0)){
 										localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
 									}
+								}
+								if(localStock.bestSector[j].time < tabRead[k].lapTimes[tabRead[k].lnum].tabSect[j].stime){
+									localStock.bestSector[j].time = tabRead[k].lapTimes[tabRead[k].lnum].tabSect[j].stime;
+									localStock.bestSector[j].num = localStock.tabResult[k].num;
+									localStock.bestSector[j].teamName = localStock.tabResult[k].teamName;
 								}
 								localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[tmpLap].tabSect[j].stime;
 							}
@@ -245,6 +249,11 @@ void server(char *date_time){
 											localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
 										}
 									}
+									if(localStock.bestSector[j].time < tabRead[k].lapTimes[i].tabSect[j].stime){
+										localStock.bestSector[j].time = tabRead[k].lapTimes[i].tabSect[j].stime;
+										localStock.bestSector[j].num = i;
+										localStock.bestSector[j].teamName = localStock.tabResult[k].teamName;
+									}
 									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
 								}
 							}
@@ -257,6 +266,11 @@ void server(char *date_time){
 											localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
 										}
 									}
+									if(localStock.bestSector[j].time < tabRead[k].lapTimes[i].tabSect[j].stime){
+										localStock.bestSector[j].time = tabRead[k].lapTimes[i].tabSect[j].stime;
+										localStock.bestSector[j].num = i;
+										localStock.bestSector[j].teamName = localStock.tabResult[k].teamName;
+									}
 									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
 								}
 							}
@@ -268,6 +282,11 @@ void server(char *date_time){
 											(localStock.tabResult[k].timeLastLap != 0.0)){
 											localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
 										}
+									}
+									if(localStock.bestSector[j].time < tabRead[k].lapTimes[i].tabSect[j].stime){
+										localStock.bestSector[j].time = tabRead[k].lapTimes[i].tabSect[j].stime;
+										localStock.bestSector[j].num = i;
+										localStock.bestSector[j].teamName = localStock.tabResult[k].teamName;
 									}
 									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
 								}
@@ -299,6 +318,7 @@ void server(char *date_time){
 					semDown(sem_DispSrv, 0);
 					memcpy(&listStock->tabResult[k], &localStock.tabResult[k], sizeof(TResults));
 					memcpy(&listStock->bestDriver, &localStock.bestDriver, sizeof(TBest));
+					for(i=0; i<3; i++) memcpy(&listStock->bestSector[i], &localStock.bestSector[i], sizeof(TBestSect));
 					semUp(sem_DispSrv, 0);
 					// Check end conditions
 					if((type == SIGGP) && (localStock.tabResult[k].lnum >= LAPGP)) finished = true;

@@ -44,27 +44,6 @@ typedef struct TTabCar {
 	TLap lapTimes[75]; /* it's a pointer because laps number depends of the race type (I suppose ^^) */
 } TTabCar;
  
-//DELETE ALL 
-/* Trial type */
-typedef struct TTrial {
- 	int weather;
- 	TCar carList[24];
-} TTrial;
-
- /* Qualif type */
-typedef struct TQualif {
-	int weather;
-	TCar* carLost; /* The last cars that are retrieved from the qualif */
-	TCar carList[24];
-
-} TQualif;
-
-/* Grand Prix type */
-typedef struct TGP {
-	int weather;
-	TCar carList[24];
-} TGP;
-//DELETE ALL END
 /* Podium type */
 typedef struct TPod {
 	TCar first;
@@ -97,9 +76,16 @@ typedef struct TBest{
 	double time;
 } TBest;
 
+typedef struct TBestSect{
+	int num;
+	const char * teamName;
+	double time;
+} TBestSect;
+
 typedef struct TSharedStock{
 	TResults tabResult[22];
 	TBest bestDriver;
+	TBestSect bestSector[3];
 } TSharedStock;
 
 typedef struct TWriteQT{
