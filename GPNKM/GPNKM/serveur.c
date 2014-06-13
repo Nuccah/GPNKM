@@ -121,17 +121,17 @@ void server(char *date_time){
 		int maxCar = 22;
 		switch(type){
 			case SIGTR1: 
-					timeMax = 5400.0;
+					timeMax = 500.0; //5400
 					sendSig(SIGSTART, sem_control, 0);
 					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 		
 					break;
 			case SIGTR2: 
-					timeMax = 5400.0;
+					timeMax = 500.0; //5400
 					sendSig(SIGSTART, sem_control, 0);
 					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 
 					break;
 			case SIGTR3: 
-					timeMax = 3600.0;
+					timeMax = 500.0; //3600
 					sendSig(SIGSTART, sem_control, 0);
 					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 
 					break;
@@ -182,8 +182,18 @@ void server(char *date_time){
 			for(m = 0; m < 22; m++){
 				if(tabOut[m].numCell == i) selected = false;
 			}
-			tabSelected[i] = selected; 
-			localStock.tabResult[i].selected = selected;
+			 
+			if(type != SIGGP){
+				tabSelected[i] = selected;
+				localStock.tabResult[i].selected = selected;
+			} 
+			else {
+				tabSelected[i] = true;
+				localStock.tabResult[i].selected = true;
+			}
+			semDown(sem_DispSrv, 0);
+			memcpy(&listStock->tabResult[i].selected, &localStock.tabResult[i].selected, sizeof(bool));
+			semUp(sem_DispSrv, 0);
 		}
 		int currentLap = 0;
 		int tmpLap = 0, tmpSec = 0, k, nbFinished = 0;
@@ -194,7 +204,6 @@ void server(char *date_time){
 					tmpLap = localStock.tabResult[k].lnum;
 					tmpSec = localStock.tabResult[k].snum;
 
-					//while(semGet(sem_mutex, TMP1) != 1);
 					semDown(sem_mutex, TMP1);
 					memcpy(&tabRead[k].lnum, &tabCar[k].lnum, sizeof(int));
 					memcpy(&tabRead[k].snum, &tabCar[k].snum, sizeof(int));
@@ -333,9 +342,11 @@ void server(char *date_time){
     					}
     				  	break;	    					
     		case SIGQU2 :
-						for(i = 0; i<22; i++){
-							for(s=0; s<22; s++){
-								if(localStock.tabResult[s].selected) memcpy(&tmpStock.tabResult[i], &localStock.tabResult[i], sizeof(TResults));
+						i = 0;
+						for(s=0; s<22; s++){
+							if(localStock.tabResult[s].selected){
+								memcpy(&tmpStock.tabResult[i], &localStock.tabResult[s], sizeof(TResults));
+								i++;
 							}
 						} 
     					qsort(tmpStock.tabResult, 15, sizeof(TResults), (int (*)(const void*, const void*))cmpQual);
@@ -347,9 +358,11 @@ void server(char *date_time){
     					}
     				  	break;	
     		case SIGQU3 :
-						for(i = 0; i<22; i++){
-							for(s=0; s<22; s++){
-								if(localStock.tabResult[s].selected) memcpy(&tmpStock.tabResult[i], &localStock.tabResult[i], sizeof(TResults));
+						i = 0;
+						for(s=0; s<22; s++){
+							if(localStock.tabResult[s].selected){
+								memcpy(&tmpStock.tabResult[i], &localStock.tabResult[s], sizeof(TResults));
+								i++;
 							}
 						} 
     					qsort(tmpStock.tabResult, 8, sizeof(TResults), (int (*)(const void*, const void*))cmpQual); 
