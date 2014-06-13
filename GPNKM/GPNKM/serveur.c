@@ -411,6 +411,7 @@ void server(char *date_time){
 							memcpy(&tmpWrite.tabResult[i], &tmpStock.tabResult[i], sizeof(TResults));
     				  	break;	
     		case SIGGP:
+						memcpy(&tmpStock, &localStock, sizeof(TSharedStock));
 						qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpGP);
 						memcpy(&tmpWrite, &tmpStock, sizeof(TSharedStock));
 						break;
