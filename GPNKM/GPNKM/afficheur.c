@@ -86,24 +86,24 @@ void showTRMenu(int sem_control, int sem_type, int level, char *date_time){
 					show_notice("Monitor", "Trial 1 is going to begin");
 				    sendSig(SIGTR1, sem_type, 0);
 				    scoreMonitor(sem_control, SIGTR1, level, date_time);
-				    break;
 				}
+				break;
 		case '2' : 
 				fflush(stdin);
 				if (level == 1){
 					show_notice("Monitor", "Trial 2 is going to begin");
 				    sendSig(SIGTR2, sem_type, 0);
 				    scoreMonitor(sem_control, SIGTR2, level, date_time);
-				    break;
 				}
+				break;
 		case '3' : 
 				fflush(stdin);
 				if (level == 2){
 					show_notice("Monitor", "Trial 3 is going to begin");
 				    sendSig(SIGTR3, sem_type, 0);
 				    scoreMonitor(sem_control, SIGTR3, level, date_time);
-				    break;
 				}
+				break;
 		case '0' : 
 			fflush(stdin);
 			showMainMenu(level, date_time); 
@@ -133,22 +133,22 @@ void showQualifMenu(int sem_control, int sem_type, int level, char *date_time){
 					show_notice("Monitor", "Qualification 1 is going to begin");
 				   	sendSig(SIGQU1, sem_type, 0);
 				   	scoreMonitor(sem_control, SIGQU1, level, date_time);
-				  	break;
-				}	
+				}
+				break;	
 		case '2' : 
 				if (level == 4){
 					show_notice("Monitor", "Qualification 1 is going to begin");
 					sendSig(SIGQU2, sem_type, 0);
 					scoreMonitor(sem_control, SIGQU2, level, date_time);
-					break;
 				}
+				break;
 		case '3' : 
 				if (level == 5){
 					show_notice("Monitor", "Qualification 1 is going to begin");
 					sendSig(SIGQU3, sem_type, 0);
 					scoreMonitor(sem_control, SIGQU3, level, date_time);
-					break;
 				}
+				break;
 		case '0' : 
 			showMainMenu(level, date_time); 
 			break;
@@ -179,8 +179,7 @@ void showMainMenu(int level, char *date_time){
 	if (level < 3) printf ("1 : Begin Test Runs\n");
 	if (level > 2 && level < 6) printf ("2 : Begin Qualifiers\n");
 	if (level == 6) printf ("3 : Begin Grand Prix\n");
-	if (level > 2) printf ("4 : Show Results of Grand Prix\n");
-	printf ("5 : Restart Grand Prix\n");
+	if (level > 2)printf ("4 : Show Results of Grand Prix\n");
 	printf ("0 : Exit\n");
 	printf ("-------------------------------------\033[0m \n\n");
 	switch(getchar())
@@ -188,22 +187,23 @@ void showMainMenu(int level, char *date_time){
 		case '1' : 
 				if(level < 3){
 					showTRMenu(sem_control, sem_type, level, date_time); 
-					break;
 				}
+				break;
 		case '2' : 
 				if(level > 2 && level < 6){
 					showQualifMenu(sem_control, sem_type, level, date_time);
-					break;
-				}	 
+				}	
+				break; 
 		case '3' : 
 				if(level == 6){
 					show_notice("Monitor", "Grand Prix is going to begin");
 			   		sendSig(SIGGP, sem_type, 0);
 			   		scoreMonitor(sem_control, SIGGP, level, date_time);
-			   		break;
-				}   	
-		case '4' : if (level > 2){afficheResultats(date_time, level); break;}
-		case '5' : printf("Restart Grand Prix\n"); break;
+				}  
+				break; 	
+		case '4' :  
+					if(level > 2) afficheResultats(date_time, level); 
+				break;
 		case '0' : endOfProgram(sem_control, sem_type); break;
 		default  : 
 			showMainMenu(level, date_time); 
@@ -238,10 +238,9 @@ void weatherMsg(int number){
 }
 
 void afficheResultats(char *date_time, int level){
-	fflush(stdin);
 	int stream = 0, i, j, nbReads;
-
 	TTabGP tabResultsGP;
+	fflush(stdout); getchar();
 	if((stream = open(date_time, O_RDWR | O_CREAT)) < 0)
 	{
 		perror("Error while opening/creating message.\n");
@@ -249,7 +248,6 @@ void afficheResultats(char *date_time, int level){
 	lseek(stream, 0, SEEK_SET);
 	if (level < 6){
 		nbReads = 3;
-
 	} 
 	else if(level > 5 && level < 7){
 		nbReads = 6;
@@ -276,17 +274,17 @@ void afficheResultats(char *date_time, int level){
 	{
 		case '1' : 
 				if(level > 2){
-					afficheTrials(&tabResultsQT[0], &tabResultsQT[1], &tabResultsQT[2]); 
+					afficheQT(tabResultsQT[0], tabResultsQT[1], tabResultsQT[2], date_time, level); 
 					break;
 				}
 		case '2' : 
 				if(level > 5){
-					afficheQualif(&tabResultsQT[3], &tabResultsQT[4], &tabResultsQT[5]);
+					afficheQT(tabResultsQT[3], tabResultsQT[4], tabResultsQT[5], date_time, level);
 					break;
 				}	 
 		case '3' : 
 				if(level == 7){
-			   		afficheGrandPrix(&tabResultsGP);
+			   		afficheGrandPrix(tabResultsGP, date_time, level);
 			   		break;
 				}   	
 		default  : 
@@ -295,14 +293,51 @@ void afficheResultats(char *date_time, int level){
 	}
 }
 
-void afficheTrials(TTabQT *ResultsT1, TTabQT *ResultsT2, TTabQT *ResultsT3){
-
+void afficheQT(TTabQT Results1, TTabQT Results2, TTabQT Results3, char *date_time, int level){
+	fflush(stdin);
+	int i;
+	system ( "clear" );
+	printf("\033[36m");
+	printf ("World Famous GPNKM Race!\n");
+	printf ("Result of Run 1!\n");
+	printf ("-------------------------------------\n\n");
+	printf(" Pos | Driver | Team Name | Best Lap | Retired \n");
+	for(i=0; i<22; i++) printf(" %d | %d | %s | %10.2lf | %3s \n", Results1.results[i].pos, Results1.results[i].num, Results1.results[i].teamName,
+								Results1.results[i].timeBestLap, Results1.results[i].retired ? "yes" : "no");
+	printf ("-------------------------------------\n\n");
+	getchar();
+	printf ("World Famous GPNKM Race!\n");
+	printf ("Result of Run 2!\n");
+	printf ("-------------------------------------\n\n");
+	printf(" Pos | Driver | Team Name | Best Lap | Retired \n");
+	for(i=0; i<22; i++) printf(" %d | %d | %s | %10.2lf | %3s \n", Results2.results[i].pos, Results2.results[i].num, Results2.results[i].teamName,
+								Results2.results[i].timeBestLap, Results2.results[i].retired ? "yes" : "no");
+	printf ("-------------------------------------\n\n");
+	getchar();
+	printf ("World Famous GPNKM Race!\n");
+	printf ("Result of Run 3!\n");
+	printf ("-------------------------------------\n\n");
+	printf(" Pos | Driver | Team Name | Best Lap | Retired \n");
+	for(i=0; i<22; i++) printf(" %d | %d | %s | %10.2lf | %3s \n", Results3.results[i].pos, Results3.results[i].num, Results3.results[i].teamName,
+								Results3.results[i].timeBestLap, Results3.results[i].retired ? "yes" : "no");
+	printf ("-------------------------------------\n\n");
+	getchar();
+	afficheResultats(date_time, level);
 }
 
-void afficheQualif(TTabQT *ResultsQ1, TTabQT *ResultsQ2, TTabQT *ResultsQ3){
-
-}
-
-void afficheGrandPrix(TTabGP *ResultsGP){
-
+void afficheGrandPrix(TTabGP ResultsGP, char *date_time, int level){
+	fflush(stdin);
+	int i;
+	system ( "clear" );
+	printf("\033[36m");
+	printf ("World Famous GPNKM Race!\n");
+	printf ("Final Results of the Grand Prix!\n");
+	printf ("-------------------------------------\n\n");
+	printf(" Pos | Driver | Team Name | Laps | Global Time | Best Lap | Retired \n");
+	for(i=0; i<22; i++) printf(" %d | %d | %s | %d | %10.2lf | %10.2lf | %3s \n", ResultsGP.results[i].pos, ResultsGP.results[i].num, 
+									ResultsGP.results[i].teamName, ResultsGP.results[i].lnum, ResultsGP.results[i].timeGlobal, 
+									ResultsGP.results[i].timeBestLap, ResultsGP.results[i].retired ? "yes" : "no");
+	printf ("-------------------------------------\n\n");
+	getchar();
+	afficheResultats(date_time, level);
 }

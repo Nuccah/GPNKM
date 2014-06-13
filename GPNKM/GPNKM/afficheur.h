@@ -9,8 +9,7 @@ void showTRMenu(int sem_control, int sem_type, int level, char *date_time);
 void showQualifMenu(int sem_control,  int sem_type, int level, char *date_time);
 void showMainMenu(int level, char *date_time);
 void afficheResultats(char *date_time, int level);
-void afficheTrials(TTabQT *ResultsT1, TTabQT *ResultsT2, TTabQT *ResultsT3);
-void afficheQualif(TTabQT *ResultsQ1, TTabQT *ResultsQ2, TTabQT *ResultsQ3);
-void afficheGrandPrix(TTabGP *ResultsGP);
+void afficheQT(TTabQT Results1, TTabQT Results2, TTabQT Results3, char *date_time, int level);
+void afficheGrandPrix(TTabGP ResultsGP, char *date_time, int level);
 
 #endif

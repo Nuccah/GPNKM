@@ -402,6 +402,9 @@ void server(char *date_time){
 						qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpGP);
 						memcpy(&tmpWrite, &tmpStock, sizeof(TSharedStock));
 						break;
+			case SIGTR1: case SIGTR2: case SIGTR3: 
+						
+						memcpy(&tmpWrite, &tmpStock, sizeof(TSharedStock));
     	}
 		show_success("Server", "Race terminated!");
 
