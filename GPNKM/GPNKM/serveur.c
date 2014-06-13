@@ -304,7 +304,7 @@ void server(char *date_time){
 					// Calculate lap time only when the turn is over
 					localStock.tabResult[k].retired = tabRead[k].retired;
 					localStock.tabResult[k].pitstop = tabRead[k].pitstop;
-					if(localStock.bestDriver.time > localStock.tabResult[k].timeLastLap) // if best lap time is bigger than timeLastLap 
+					if((localStock.bestDriver.time > localStock.tabResult[k].timeLastLap) && (localStock.tabResult[k].timeLastLap != 0.0)) // if best lap time is bigger than timeLastLap 
 					{
 						localStock.bestDriver.time = localStock.tabResult[k].timeLastLap;
 						localStock.bestDriver.lnum = localStock.tabResult[k].lnum;
