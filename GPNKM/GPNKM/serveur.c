@@ -349,7 +349,7 @@ void server(char *date_time){
     	for(s = 0; s<22; s++) semReset(sem_race, s);
     	sendSig(SIGEND, sem_control, 0);
     	TSharedStock tmpStock;
-
+    	TSharedStock tmpWrite;
     	switch(type){
     		case SIGQU1 :
     					memcpy(&tmpStock, &localStock, sizeof(TSharedStock));
@@ -360,6 +360,7 @@ void server(char *date_time){
     							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
     						}
     					}
+						memcpy(&tmpWrite, &tmpStock, sizeof(TSharedStock));
     				  	break;	    					
     		case SIGQU2 :
 						i = 0;
@@ -376,6 +377,8 @@ void server(char *date_time){
     							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
     						}
     					}
+						for(i=0; i<16;i++)
+							memcpy(&tmpWrite.tabResult[i], &tmpStock.tabResult[i], sizeof(TResults));
     				  	break;	
     		case SIGQU3 :
 						i = 0;
@@ -392,9 +395,12 @@ void server(char *date_time){
     							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
     						}
     					}
+						for(i=0; i<7;i++)
+							memcpy(&tmpWrite.tabResult[i], &tmpStock.tabResult[i], sizeof(TResults));
     				  	break;	
     		case SIGGP:
 						qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpGP);
+						memcpy(&tmpWrite, &tmpStock, sizeof(TSharedStock));
 						break;
     	}
 		show_success("Server", "Race terminated!");
@@ -407,12 +413,12 @@ void server(char *date_time){
 			TTabGP tabTmpGP;
 			for(i=0; i<22; i++){
 				tabTmpGP.results[i].pos = i+1;
-				tabTmpGP.results[i].num = tmpStock.tabResult[i].num;
-				tabTmpGP.results[i].lnum = tmpStock.tabResult[i].lnum + 1;
-				tabTmpGP.results[i].teamName = tmpStock.tabResult[i].teamName;
-				tabTmpGP.results[i].timeBestLap = tmpStock.tabResult[i].bestLapTime;
-				tabTmpGP.results[i].timeGlobal = tmpStock.tabResult[i].timeGlobal;
-				tabTmpGP.results[i].retired = tmpStock.tabResult[i].retired;
+				tabTmpGP.results[i].num = tmpWrite.tabResult[i].num;
+				tabTmpGP.results[i].lnum = tmpWrite.tabResult[i].lnum + 1;
+				tabTmpGP.results[i].teamName = tmpWrite.tabResult[i].teamName;
+				tabTmpGP.results[i].timeBestLap = tmpWrite.tabResult[i].bestLapTime;
+				tabTmpGP.results[i].timeGlobal = tmpWrite.tabResult[i].timeGlobal;
+				tabTmpGP.results[i].retired = tmpWrite.tabResult[i].retired;
 			}
 			tabTmpGP.bestLap = localStock.bestDriver;
 			write(stream,&tabTmpGP,sizeof(TTabGP)); 
@@ -421,10 +427,10 @@ void server(char *date_time){
 			TTabQT tabTmpQT; 
 			for(i=0; i<22; i++){
 				tabTmpQT.results[i].pos = i+1;
-				tabTmpQT.results[i].num = tmpStock.tabResult[i].num;
-				tabTmpQT.results[i].teamName = tmpStock.tabResult[i].teamName;
-				tabTmpQT.results[i].timeBestLap = tmpStock.tabResult[i].bestLapTime;
-				tabTmpQT.results[i].retired = tmpStock.tabResult[i].retired;
+				tabTmpQT.results[i].num = tmpWrite.tabResult[i].num;
+				tabTmpQT.results[i].teamName = tmpWrite.tabResult[i].teamName;
+				tabTmpQT.results[i].timeBestLap = tmpWrite.tabResult[i].bestLapTime;
+				tabTmpQT.results[i].retired = tmpWrite.tabResult[i].retired;
 			}
 			write(stream,&tabTmpQT,sizeof(TTabQT));
 		}
