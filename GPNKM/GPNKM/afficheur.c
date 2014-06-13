@@ -41,19 +41,75 @@ void scoreMonitor(int sem_control, int type, int level, char *date_time){
 				else qsort(localStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpQual);
 				int i;
 				system("clear");
-				for(i = 0; i < 22; i++){
-					if((i+1) < 10) printf("[0%d] | ", i+1);
-					else printf("[%d] | ", i+1);
-					if(localStock.tabResult[i].num < 10) printf("[Driver 0%d] ", localStock.tabResult[i].num); 
-					else printf("[Driver %d] ", localStock.tabResult[i].num);
-					printf("lap: %3d | time: %10.2lf sec | best: %7.2lf sec | last: %7.2lf sec | ",
-							localStock.tabResult[i].lnum, localStock.tabResult[i].timeGlobal,
-							localStock.tabResult[i].bestLapTime, localStock.tabResult[i].timeLastLap);
-					printf("Retired : %3s", localStock.tabResult[i].retired ? "yes" : "no");
-					printf(" | Pitstop : %3s", localStock.tabResult[i].pitstop ? "yes" : "no");
-					printf(" | Selected: %3s", localStock.tabResult[i].selected ? "yes" : "no");
+				if(type == SIGGP){
+					printf(" Pos | Driver |        Team Name        | Global Time | Lap | Sect 1 | Sect 2 | Sect 3 | Best Lap | Retired | Pitstop \n");
+					for(i = 0; i < 22; i++){
+						printf(" %3d | %6d | %23s | %11.2lf | %3d | %6.2lf | %6.2lf | %6.2lf | %8.2lf | %7s | %7s \n", i+1, localStock.tabResult[i].num, 
+									localStock.tabResult[i].teamName, localStock.tabResult[i].timeGlobal, localStock.tabResult[i].lnum,  
+									localStock.tabResult[i].tabSect[0].stime, localStock.tabResult[i].tabSect[1].stime, localStock.tabResult[i].tabSect[2].stime, 
+									localStock.tabResult[i].bestLapTime, localStock.tabResult[i].retired ? "yes" : "no", 
+									localStock.tabResult[i].pitstop ? "yes" : "no");
+					}
 					printf("\n");
-				}					
+					printf("Best Lap\n");
+					printf(" Driver |        Team Name        | Lap | Lap Time \n");
+					printf(" %6d | %23s | %3d | %8.2lf \n", localStock.bestDriver.num, localStock.bestDriver.teamName, 
+							localStock.bestDriver.lnum, localStock.bestDriver.time);
+					printf("\n");
+					printf("\n");
+					printf("Best Sector");
+					printf(" Driver |        Team Name        | Sector 1 | Sector 2 | Sector 3 \n");
+					for(i=0;i<3;i++){
+						if(i==0){
+							printf(" %6d | %23s | %6.2lf | ------ | ------ \n", 
+								localStock.bestSector[i].num, localStock.bestSector[i].teamName, 
+								localStock.bestSector[i].time);
+						}
+						if(i==1){
+							printf(" %6d | %23s | ------ | %6.2lf | ------ \n", 
+								localStock.bestSector[i].num, localStock.bestSector[i].teamName, 
+								localStock.bestSector[i].time);
+						}
+						if(i==2){
+							printf(" %6d | %23s | ------ | ------ | %6.2lf \n", 
+								localStock.bestSector[i].num, localStock.bestSector[i].teamName, 
+								localStock.bestSector[i].time);
+						}
+					}
+					printf("\n");		
+				} 
+				else{
+					printf(" Pos | Driver |        Team Name        | Lap | Sect 1 | Sect 2 | Sect 3 | Best Lap | Retired | Pitstop \n");
+					for(i = 0; i < 22; i++){
+						printf(" %3d | %6d | %23s | %3d | %6.2lf | %6.2lf | %6.2lf | %8.2lf | %7s | %7s \n", i+1, localStock.tabResult[i].num, 
+									localStock.tabResult[i].teamName, localStock.tabResult[i].lnum,  
+									localStock.tabResult[i].tabSect[0].stime, localStock.tabResult[i].tabSect[1].stime, localStock.tabResult[i].tabSect[2].stime, 
+									localStock.tabResult[i].bestLapTime, localStock.tabResult[i].retired ? "yes" : "no",
+									localStock.tabResult[i].pitstop ? "yes" : "no");
+					}
+					printf("\n");
+					printf("Best Sector\n");
+					printf(" Driver |        Team Name        | Sector 1 | Sector 2 | Sector 3 \n");
+					for(i=0;i<3;i++){
+						if(i==0){
+							printf(" %6d | %23s | %6.2lf | ------ | ------ \n", 
+								localStock.bestSector[i].num, localStock.bestSector[i].teamName, 
+								localStock.bestSector[i].time);
+						}
+						if(i==1){
+							printf(" %6d | %23s | ------ | %6.2lf | ------ \n", 
+								localStock.bestSector[i].num, localStock.bestSector[i].teamName, 
+								localStock.bestSector[i].time);
+						}
+						if(i==2){
+							printf(" %6d | %23s | ------ | ------ | %6.2lf \n", 
+								localStock.bestSector[i].num, localStock.bestSector[i].teamName, 
+								localStock.bestSector[i].time);
+						}
+					}
+					printf("\n");
+				} 
+				printf("\n");					
 			}
 			sleep(1);
 		} 

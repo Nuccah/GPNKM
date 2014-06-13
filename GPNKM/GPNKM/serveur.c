@@ -338,6 +338,7 @@ void server(char *date_time){
 		} while(!finished);
 
 		if(type == SIGGP){ // Terminate GP and send all last informations to monitor
+			for(i=0;i<22;i++) sendSig(SIGEND, sem_race, i);
 			sendSig(SIGEND, sem_control, 0);
 		}
     	show_notice("Server", "Waiting last drivers informations and end of run");
