@@ -351,13 +351,16 @@ void server(char *date_time){
     	TSharedStock tmpStock;
     	TSharedStock tmpWrite;
     	switch(type){
-    		case SIGQU1 :
+    		case SIGQU1 : case SIGTR1 : case SIGTR2 : case SIGTR3 :
     					memcpy(&tmpStock, &localStock, sizeof(TSharedStock));
     					qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpQual); 
-    					for(i=21; i>14; i--){ 
-    						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
-    						for(s=0; s<22; s++){
-    							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
+    					if(type == SIGQU1)
+    					{
+    						for(i=21; i>14; i--){ 
+	    						tabOut[i].numPilot = tmpStock.tabResult[i].num; 
+	    						for(s=0; s<22; s++){
+	    							if(tabOut[i].numPilot == localStock.tabResult[s].num) tabOut[i].numCell = s;
+	    						}
     						}
     					}
 						memcpy(&tmpWrite, &tmpStock, sizeof(TSharedStock));
@@ -402,9 +405,6 @@ void server(char *date_time){
 						qsort(tmpStock.tabResult, 22, sizeof(TResults), (int (*)(const void*, const void*))cmpGP);
 						memcpy(&tmpWrite, &tmpStock, sizeof(TSharedStock));
 						break;
-			case SIGTR1: case SIGTR2: case SIGTR3: 
-						
-						memcpy(&tmpWrite, &tmpStock, sizeof(TSharedStock));
     	}
 		show_success("Server", "Race terminated!");
 

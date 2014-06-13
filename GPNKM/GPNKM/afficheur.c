@@ -301,26 +301,32 @@ void afficheQT(TTabQT Results1, TTabQT Results2, TTabQT Results3, char *date_tim
 	printf ("World Famous GPNKM Race!\n");
 	printf ("Result of Run 1!\n");
 	printf ("-------------------------------------\n\n");
-	printf(" Pos | Driver | Team Name | Best Lap | Retired \n");
-	for(i=0; i<22; i++) printf(" %d | %d | %s | %10.2lf | %3s \n", Results1.results[i].pos, Results1.results[i].num, Results1.results[i].teamName,
+	printf(" Pos | Driver |        Team Name        | Best Lap | Retired \n");
+	for(i=0; i<22; i++) printf(" %3d | %6d | %23s | %8.2lf | %7s \n", Results1.results[i].pos, Results1.results[i].num, Results1.results[i].teamName,
 								Results1.results[i].timeBestLap, Results1.results[i].retired ? "yes" : "no");
 	printf ("-------------------------------------\n\n");
+	fflush(stdin);
+	printf("Press any key to show results of run 2\n");
 	getchar();
 	printf ("World Famous GPNKM Race!\n");
 	printf ("Result of Run 2!\n");
 	printf ("-------------------------------------\n\n");
-	printf(" Pos | Driver | Team Name | Best Lap | Retired \n");
-	for(i=0; i<22; i++) printf(" %d | %d | %s | %10.2lf | %3s \n", Results2.results[i].pos, Results2.results[i].num, Results2.results[i].teamName,
+	printf(" Pos | Driver |        Team Name        | Best Lap | Retired \n");
+	for(i=0; i<22; i++) printf(" %3d | %6d | %23s | %8.2lf | %7s \n", Results2.results[i].pos, Results2.results[i].num, Results2.results[i].teamName,
 								Results2.results[i].timeBestLap, Results2.results[i].retired ? "yes" : "no");
 	printf ("-------------------------------------\n\n");
+	fflush(stdin);
+	printf("Press any key to show results of run 3\n");
 	getchar();
 	printf ("World Famous GPNKM Race!\n");
 	printf ("Result of Run 3!\n");
 	printf ("-------------------------------------\n\n");
-	printf(" Pos | Driver | Team Name | Best Lap | Retired \n");
-	for(i=0; i<22; i++) printf(" %d | %d | %s | %10.2lf | %3s \n", Results3.results[i].pos, Results3.results[i].num, Results3.results[i].teamName,
+	printf(" Pos | Driver |        Team Name        | Best Lap | Retired \n");
+	for(i=0; i<22; i++) printf(" %3d | %6d | %23s | %8.2lf | %7s \n", Results3.results[i].pos, Results3.results[i].num, Results3.results[i].teamName,
 								Results3.results[i].timeBestLap, Results3.results[i].retired ? "yes" : "no");
 	printf ("-------------------------------------\n\n");
+	fflush(stdin);
+	printf("Press any key to go back\n");
 	getchar();
 	afficheResultats(date_time, level);
 }
@@ -333,11 +339,18 @@ void afficheGrandPrix(TTabGP ResultsGP, char *date_time, int level){
 	printf ("World Famous GPNKM Race!\n");
 	printf ("Final Results of the Grand Prix!\n");
 	printf ("-------------------------------------\n\n");
-	printf(" Pos | Driver | Team Name | Laps | Global Time | Best Lap | Retired \n");
-	for(i=0; i<22; i++) printf(" %d | %d | %s | %d | %10.2lf | %10.2lf | %3s \n", ResultsGP.results[i].pos, ResultsGP.results[i].num, 
+	printf(" Pos | Driver |        Team Name        | Laps | Global Time | Best Lap | Retired \n");
+	for(i=0; i<22; i++) printf(" %3d | %6d | %23s | %4d | %8.2lf | %8.2lf | %7s \n", ResultsGP.results[i].pos, ResultsGP.results[i].num, 
 									ResultsGP.results[i].teamName, ResultsGP.results[i].lnum, ResultsGP.results[i].timeGlobal, 
 									ResultsGP.results[i].timeBestLap, ResultsGP.results[i].retired ? "yes" : "no");
 	printf ("-------------------------------------\n\n");
+	printf ("Best Lap Result of the Grand Prix!\n");
+	printf ("-------------------------------------\n\n");
+	printf(" Driver |        Team Name        | Lap Number | Best Lap \n");
+	printf(" %3d | %23s | %4d | %8.2lf \n", ResultsGP.results[i].num, ResultsGP.results[i].teamName, 
+											ResultsGP.results[i].lnum, ResultsGP.results[i].timeBestLap);
+	printf ("-------------------------------------\n\n");
+	printf("Press any key to go back\n");
 	getchar();
 	afficheResultats(date_time, level);
 }
