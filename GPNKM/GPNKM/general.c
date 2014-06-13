@@ -14,7 +14,7 @@ void semUp(int sem_id, int sem_channel){
 	struct sembuf op;
 	op.sem_num = sem_channel;
 	op.sem_op = 1;
-	op.sem_flg = 0;
+	op.sem_flg = IPC_NOWAIT;
 	semop(sem_id, &op, 1);
 }
 
@@ -47,7 +47,7 @@ void sendSig(int sig, int sem_id, int sem_channel){
 
 // force to wait the sig parameter in the corresponding sema
 void waitSig(int sig, int sem_id, int sem_channel){
-	while(semctl(sem_id, sem_channel, GETVAL) != sig); 
+	while(semctl(sem_id, sem_channel, GETVAL) != sig) usleep(2000); 
 }
 
 // check once the sig value in the sema and compare to the parameter 

@@ -33,7 +33,7 @@ void scoreMonitor(int sem_control, int type, int level, char *date_time){
 	do{
 		if(checkSig(SIGEND, sem_control, 0)) finished = true;
 		else{
-			while(semGet(sem_DispSrv, 0) != 1);
+			//while(semGet(sem_DispSrv, 0) != 1);
 			semDown(sem_DispSrv, 0);
 			memcpy(&localStock, listStock, sizeof(TSharedStock));
 			semUp(sem_DispSrv, 0);
@@ -165,7 +165,10 @@ void showMainMenu(int level, char *date_time){
 	key_t sem_control_key = ftok(PATH, CONTROL);
 	int sem_control = semget(sem_control_key, 2, IPC_CREAT | PERMS);
 	int weather = 1;
-	while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 1);	
+	while(!((weather >= SIGDRY) && (weather <= SIGRAIN))){
+		usleep(2000);
+		weather = getSig(sem_control, 1);
+	} 	
 
 	system ( "clear" );
 	printf("\033[36m");

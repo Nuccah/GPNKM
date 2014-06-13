@@ -58,14 +58,16 @@ void server(char *date_time){
 		sendSig(randomWeather(), sem_control, 1);
 		// Wait race type from Monitor
 		int type = 0;
-		while((!((type >= SIGTR1) && (type <= SIGGP))) && (!checkSig(SIGEXIT, sem_control, 0))) type = getSig(sem_type, 0);
+		while((!((type >= SIGTR1) && (type <= SIGGP))) && (!checkSig(SIGEXIT, sem_control, 0))){
+			usleep(2000);
+			type = getSig(sem_type, 0);
+		}
 		if(checkSig(SIGEXIT, sem_control, 0)) goto eop;
 		printf("Server received: %d\n", type);
 
 		TSharedStock localStock;
 		localStock.bestDriver.time = 0;
 
-		while(semGet(sem_DispSrv, 0) != 1);
 		semDown(sem_DispSrv, 0);
 		for(j=0; j < 22; j++){
 			listStock->tabResult[j].timeGlobal = 0.0;
@@ -85,7 +87,7 @@ void server(char *date_time){
 			} 
 			if(selected){
 				do{
-					while(semGet(sem_mutex, TMP1) != 1);
+					//while(semGet(sem_mutex, TMP1) != 1);
 					semDown(sem_mutex, TMP1);
 				    memcpy(&tabRead[i].teamName, &tabCar[i].teamName, sizeof(char *));
 				    memcpy(&tabRead[i].num, &tabCar[i].num, sizeof(int));
@@ -104,7 +106,7 @@ void server(char *date_time){
 				}while(!tabRead[i].ready);
 			}
 		}
-	    while(semGet(sem_DispSrv, 0) != 1);
+	    //while(semGet(sem_DispSrv, 0) != 1);
 		semDown(sem_DispSrv, 0);
 		memcpy(listStock, &localStock, sizeof(TSharedStock)); // Put stock content into shared memory
 		semUp(sem_DispSrv, 0);
@@ -191,7 +193,7 @@ void server(char *date_time){
 					tmpLap = localStock.tabResult[k].lnum;
 					tmpSec = localStock.tabResult[k].snum;
 
-					while(semGet(sem_mutex, TMP1) != 1);
+					//while(semGet(sem_mutex, TMP1) != 1);
 					semDown(sem_mutex, TMP1);
 					memcpy(&tabRead[k].lnum, &tabCar[k].lnum, sizeof(int));
 					memcpy(&tabRead[k].snum, &tabCar[k].snum, sizeof(int));
@@ -283,12 +285,12 @@ void server(char *date_time){
 						printf(" | NbFinished: %d", nbFinished);								
 				  		printf("\n");
 				  	}
-				  	// write into the shared mem for monitor
-				  	while(semGet(sem_DispSrv, 0) != 1);
+				  	// Write into the shared mem for monitor
 					semDown(sem_DispSrv, 0);
 					memcpy(&listStock->tabResult[k], &localStock.tabResult[k], sizeof(TResults));
 					memcpy(&listStock->bestDriver, &localStock.bestDriver, sizeof(TBest));
 					semUp(sem_DispSrv, 0);
+					// Check end conditions
 					if((type == SIGGP) && (localStock.tabResult[k].lnum >= LAPGP)) finished = true;
 					if((type != SIGGP) && ((localStock.tabResult[k].retired) || (localStock.tabResult[k].timeGlobal >= timeMax)) 
 						&& (!tabFinished[k])){
@@ -308,7 +310,6 @@ void server(char *date_time){
     	int s;
     	for(s=0; s<22; s++){
 			do{
-				while(semGet(sem_mutex, TMP1) != 1);
 				semDown(sem_mutex, TMP1);
 				memcpy(&tabRead[s].ready, &tabCar[s].ready, sizeof(bool));
 				semUp(sem_mutex, TMP1);

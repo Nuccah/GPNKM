@@ -23,7 +23,7 @@ int forkPilots(){
           	pilot(i, pidNum);
        	}
     }
-	while(!checkSig(SIGEXIT, sem_control, 0));
+	waitSig(SIGEXIT, sem_control, 0);
 	for(i=0; i<11; i++){
 		if(semGet(sem_pitstop, i) != 1) semReset(sem_pitstop, i);
 		semctl(sem_pitstop, i, IPC_RMID, NULL);
@@ -43,7 +43,6 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 	int numPit = getPitstop(pilot->num);
 	// END INIT SECTION
 	// Send ready to server
-	//pilot->lapTimes = malloc(150*sizeof(TLap)); // Alloc sufficient laps for trial
 	int i = 0;
 	int lap = 0;
 	bool isDamaged = false;
@@ -57,7 +56,7 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 	double tireStatus = 100.0;
 	double global = 0.0;
 	int tmpLap = 0;
-	while((semGet(sem_mutex, TMP1) != 1));
+	//while((semGet(sem_mutex, TMP1) != 1));
 	semDown(sem_mutex, TMP1);
 	memcpy(&tabCar[numCell].snum, &pilot->snum, sizeof(int));
 	memcpy(&tabCar[numCell].lnum, &pilot->lnum, sizeof(int));
@@ -111,7 +110,7 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 							isDamaged = false;
 						}
 						pilot->pitstop = true;
-						while((semGet(sem_mutex, TMP1) != 1));
+						//while((semGet(sem_mutex, TMP1) != 1));
 						semDown(sem_mutex, TMP1);
 						memcpy(&tabCar[numCell].pitstop, &pilot->pitstop, sizeof(bool));
 						semUp(sem_mutex, TMP1);
@@ -141,7 +140,7 @@ void startRace(TTabCar *tabCar, int numCell, TCar *pilot,
 			printf("\n");			
 		}
 
-		while((semGet(sem_mutex, TMP1) != 1));
+		//while((semGet(sem_mutex, TMP1) != 1));
 		semDown(sem_mutex, TMP1);
 		memcpy(&tabCar[numCell].snum, &pilot->snum, sizeof(int));
 		memcpy(&tabCar[numCell].lnum, &pilot->lnum, sizeof(int));
@@ -188,7 +187,7 @@ void pilot(int numCell, pid_t pid){
 	TCar pilot;
 	pilot.num = drivers[numCell];
 	pilot.teamName = getTeamName(pilot.num); 
-	while((semGet(sem_mutex, TMP1) != 1));
+	//while((semGet(sem_mutex, TMP1) != 1));
 	semDown(sem_mutex, TMP1);
 	memcpy(&tabCar[numCell].num, &pilot.num, sizeof(int)); 
 	memcpy(&tabCar[numCell].teamName, &pilot.teamName, sizeof(const char *));
@@ -196,17 +195,23 @@ void pilot(int numCell, pid_t pid){
 		
 	do{
 		// Wait weather sig from server
-		while((semGet(sem_race, numCell) != SIGSELECT) && (!checkSig(SIGEXIT, sem_control, 0)));
+		while((semGet(sem_race, numCell) != SIGSELECT) && (!checkSig(SIGEXIT, sem_control, 0))) usleep(2000);
 		if(checkSig(SIGEXIT, sem_control, 0)) goto eop;
-		while(!((weather >= SIGDRY) && (weather <= SIGRAIN))) weather = getSig(sem_control, 1);
+		while(!((weather >= SIGDRY) && (weather <= SIGRAIN))){
+			usleep(2000);
+			weather = getSig(sem_control, 1);
+		}
 		pilot.tires = chooseTires(weather);
 		int race = 0;
-		while((!((race >= SIGTR1) && (race <= SIGGP))) && (!checkSig(SIGEXIT, sem_control, 0))) race = getSig(sem_type, 0);
+		while((!((race >= SIGTR1) && (race <= SIGGP))) && (!checkSig(SIGEXIT, sem_control, 0))){
+			usleep(2000);
+			race = getSig(sem_type, 0);
+		} 
 		if(checkSig(SIGEXIT, sem_control, 0)) goto eop;
 		pilot.lnum = 0;
 		pilot.snum = 0;
 
-		while((semGet(sem_mutex, TMP1) != 1));
+
 		semDown(sem_mutex, TMP1);
 		memcpy(&tabCar[numCell].lnum, &pilot.lnum, sizeof(int));
 		memcpy(&tabCar[numCell].snum, &pilot.snum, sizeof(int));
@@ -380,7 +385,6 @@ void exitPitstop(int numPit, int sem_pitstop)
 void sendReady(TTabCar *tabCar, int numCell, TCar *pilot, int sem_mutex)
 {
 	pilot->ready = true;
-	while((semGet(sem_mutex, TMP1) != 1));
 	semDown(sem_mutex, TMP1);
 	memcpy(&tabCar[numCell].ready, &pilot->ready, sizeof(bool));
 	semUp(sem_mutex, TMP1);
@@ -390,7 +394,6 @@ void sendReady(TTabCar *tabCar, int numCell, TCar *pilot, int sem_mutex)
 void sendOver(TTabCar *tabCar, int numCell, TCar *pilot, int sem_mutex)
 {
 	pilot->ready = false;
-	while((semGet(sem_mutex, TMP1) != 1));
 	semDown(sem_mutex, TMP1);
 	memcpy(&tabCar[numCell].ready, &pilot->ready, sizeof(bool));
 	semUp(sem_mutex, TMP1);
