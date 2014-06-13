@@ -438,6 +438,12 @@ void server(char *date_time){
 			write(stream,&tabTmpQT,sizeof(TTabQT));
 		}
 		close(stream);
+		if(type == SIGQU3) {
+			for(i=0;i<22;i++){
+				tabOut[i].numCell = -1;
+				tabOut[i].numPilot = -1;
+			}
+		}
 	}while(!checkSig(SIGEXIT, sem_control, 0));
 	eop:
 		shmdt(&shm_race);

@@ -195,7 +195,7 @@ void pilot(int numCell, pid_t pid){
 		
 	do{
 		// Wait weather sig from server
-		while((semGet(sem_race, numCell) != SIGSELECT) && (!checkSig(SIGEXIT, sem_control, 0))) usleep(2000);
+		while((!checkSig(SIGSELECT, sem_race, numCell)) && (!checkSig(SIGEXIT, sem_control, 0))) usleep(2000);
 		if(checkSig(SIGEXIT, sem_control, 0)) goto eop;
 		while(!((weather >= SIGDRY) && (weather <= SIGRAIN))){
 			usleep(2000);
