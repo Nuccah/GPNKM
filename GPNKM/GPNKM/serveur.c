@@ -50,7 +50,7 @@ void server(char *date_time){
 		for(j = 0; j < 22; j++){
 			bool selected = true;
 			for(i=0; i < 22; i++){
-				if(tabOut[i].numCell == j) selected = false;
+				if((tabOut[i].numPilot != -1) && (tabOut[i].numCell == j)) selected = false;
 			}
 			if(selected) sendSig(SIGSELECT, sem_race, j);
 		} 
@@ -234,6 +234,7 @@ void server(char *date_time){
 									localStock.bestSector[j].teamName = localStock.tabResult[k].teamName;
 								}
 								localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[tmpLap].tabSect[j].stime;
+								localStock.tabResult[k].tabSect[j] = tabRead[k].lapTimes[tmpLap].tabSect[j];
 							}
 						}
 					}
@@ -255,6 +256,7 @@ void server(char *date_time){
 										localStock.bestSector[j].teamName = localStock.tabResult[k].teamName;
 									}
 									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
+									localStock.tabResult[k].tabSect[j] = tabRead[k].lapTimes[i].tabSect[j];
 								}
 							}
 							else if(i == tabRead[k].lnum){
@@ -272,6 +274,7 @@ void server(char *date_time){
 										localStock.bestSector[j].teamName = localStock.tabResult[k].teamName;
 									}
 									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
+									localStock.tabResult[k].tabSect[j] = tabRead[k].lapTimes[i].tabSect[j];
 								}
 							}
 							else{
@@ -289,6 +292,7 @@ void server(char *date_time){
 										localStock.bestSector[j].teamName = localStock.tabResult[k].teamName;
 									}
 									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
+									localStock.tabResult[k].tabSect[j] = tabRead[k].lapTimes[i].tabSect[j];
 								}
 							}
 						}
@@ -440,7 +444,6 @@ void server(char *date_time){
 		close(stream);
 		if(type == SIGQU3) {
 			for(i=0;i<22;i++){
-				tabOut[i].numCell = -1;
 				tabOut[i].numPilot = -1;
 			}
 		}

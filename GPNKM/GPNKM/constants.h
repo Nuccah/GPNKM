@@ -78,7 +78,7 @@
 #define Q3 720
 
 /* Lap number for the GP */
-#define LAPGP 150
+#define LAPGP 54
 
 /* speed limits (in kmph) */
 #define MINSPEED 285.1

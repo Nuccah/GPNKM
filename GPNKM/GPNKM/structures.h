@@ -56,6 +56,7 @@ typedef struct TResults{
 	const char * teamName;
 	int lnum;
 	int snum;
+	TSect tabSect[3];
 	double timeLastLap;
 	double bestLapTime;
 	double timeGlobal;
