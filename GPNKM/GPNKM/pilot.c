@@ -10,7 +10,7 @@ int forkPilots(){
 	key_t sem_control_key = ftok(PATH, CONTROL);
 	int sem_control = semget(sem_control_key, 2, IPC_CREAT | PERMS);
 
-	for(i=0;i<DRIVERS;i++){ // Multifork des 22 pilotes
+	for(i=0;i<DRIVERS;i++){ // Multifork of 22 pilots
 		pid = fork();
 
       	if(pid == -1){
@@ -23,8 +23,8 @@ int forkPilots(){
           	pilot(i, pidNum);
        	}
     }
-	waitSig(SIGEXIT, sem_control, 0);
-	for(i=0; i<11; i++){
+	waitSig(SIGEXIT, sem_control, 0); //waiting to end the pilot
+	for(i=0; i<11; i++){// creation pit stop between each pilot in the same team
 		if(semGet(sem_pitstop, i) != 1) semReset(sem_pitstop, i);
 		semctl(sem_pitstop, i, IPC_RMID, NULL);
 	}
@@ -36,7 +36,7 @@ int forkPilots(){
 }
 
 void startRace(TTabCar *tabCar, int numCell, TCar *pilot, 
-				int sem_control, int weatherFactor, int sem_mutex, int sem_race, int sem_pitstop)
+				int sem_control, int weatherFactor, int sem_mutex, int sem_race, int sem_pitstop)//function to handle the race
 {
 	// INIT SECTION
 
@@ -242,15 +242,15 @@ void pilot(int numCell, pid_t pid){
 		exit(EXIT_SUCCESS);
 }
 
-bool crashed(){
+bool crashed(){//return a random that decide if crashed or not
 	return ((rand()/(RAND_MAX+1.0)) < CRASH);
 }
 
-bool damaged(){
+bool damaged(){//return a rand if it's consider as damage it has a chance to be crash
 	return ((rand()/(RAND_MAX+1.0)) < BREAK);
 }
 
-int chooseTires(int weather){
+int chooseTires(int weather){//choose his tires in function of the weather
 	switch( weather ) {
     	case SIGRAIN: return WETS;
     	case SIGWET: return INTERMEDIATES;
@@ -269,22 +269,22 @@ double randomNumber(double min, double max){
     return min + (rand() / div);
 }
 
-double pitTime()
+double pitTime()//return a random between mintime in pitstop and maxtime in pitstop
 {
     return randomNumber(MINTIME, MAXTIME);
 }
 
-double changeTime()
+double changeTime()//return a random for the tires changing
 {
     return randomNumber(MINCHANGE, MAXCHANGE);
 }
 
-double repairTime()
+double repairTime()//return a random for any reperation needed in pit stop
 {
     return randomNumber(MINREPAIR, MAXREPAIR);
 }
 
-double tireWear(double tireStatus, int weather){
+double tireWear(double tireStatus, int weather){//wear of tire in function of the weather
     switch( weather ) {
     	case SIGRAIN: return (tireStatus - randomNumber(TIREWEARMIN, TIREWEARMAX));
     	case SIGWET: return (tireStatus - randomNumber((TIREWEARMIN*WETFACTOR), (TIREWEARMAX*WETFACTOR)));
@@ -348,7 +348,7 @@ const char * getTeamName(int number){
 	}
 	return x;
 }
-
+//is to get the number of your team pit spot in function of your team
 int getPitstop(int number){
     int x;
 	switch( number ) {
@@ -366,7 +366,7 @@ int getPitstop(int number){
 	}
 	return x;
 }
-
+//function to see if it's possible to go in pit stop
 bool enterPitstop(int numPit, int sem_pitstop)
 {
 	if(isShMemReadable(sem_pitstop, numPit))
@@ -376,7 +376,7 @@ bool enterPitstop(int numPit, int sem_pitstop)
 	}
 	return false;
 }
-
+//function to exit the pit stop and to reset the possibility to enter in again
 void exitPitstop(int numPit, int sem_pitstop)
 {
 	semUp(sem_pitstop, numPit);

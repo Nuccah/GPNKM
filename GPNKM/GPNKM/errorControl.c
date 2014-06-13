@@ -1,5 +1,5 @@
 #include "structures.h"
-
+/*Personalisation of result in console mode to get a better vision to debug*/
 void show_notice(const char *env, const char *msg){
 	if(LOGLVL >= 1){
 		printf("\033[34m\n[%s] - N - %s\033[0m \n", env, msg);
