@@ -66,7 +66,7 @@ void server(char *date_time){
 		printf("Server received: %d\n", type);
 
 		TSharedStock localStock;
-		localStock.bestDriver.time = 0;
+		localStock.bestDriver.time = 200.0;
 
 		semDown(sem_DispSrv, 0);
 		for(j=0; j < 22; j++){
@@ -131,7 +131,7 @@ void server(char *date_time){
 					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 
 					break;
 			case SIGTR3: 
-					timeMax = 500.0; //3600
+					timeMax = 500.0; //5400
 					sendSig(SIGSTART, sem_control, 0);
 					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 
 					break;
@@ -219,7 +219,7 @@ void server(char *date_time){
 					if(tmpLap == tabRead[k].lnum)
 					{
 						if(tmpSec != tabRead[k].snum){
-							for(j=tmpSec; j <= tabRead[k].snum; j++)
+							for(j=(tmpSec+1); j <= tabRead[k].snum; j++)
 							{
 								if(localStock.tabResult[k].snum == 2) {
 									localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[tmpLap].tabSect);
@@ -242,7 +242,7 @@ void server(char *date_time){
 					{
 						for(i=tmpLap; i <=tabRead[k].lnum; i++){
 							if(i == tmpLap){
-								for(j=tmpSec; j<=2; j++){
+								for(j=(tmpSec+1); j<=2; j++){
 									if(localStock.tabResult[k].snum == 2) {
 										localStock.tabResult[k].timeLastLap = lapTime(tabRead[k].lapTimes[i].tabSect);
 										if((localStock.tabResult[k].bestLapTime > localStock.tabResult[k].timeLastLap) &&
