@@ -67,6 +67,9 @@ void server(char *date_time){
 
 		TSharedStock localStock;
 		localStock.bestDriver.time = 200.0;
+		for(j=0;j<3;j++){
+			localStock.bestSector[j].time = 100.0;
+		}
 
 		semDown(sem_DispSrv, 0);
 		for(j=0; j < 22; j++){
@@ -76,6 +79,7 @@ void server(char *date_time){
 			listStock->tabResult[j].lnum = 0;
 			listStock->tabResult[j].retired = false;
 			listStock->tabResult[j].pitstop = false;
+			
 		}
 		semUp(sem_DispSrv, 0);
 		int m;
@@ -121,17 +125,17 @@ void server(char *date_time){
 		int maxCar = 22;
 		switch(type){
 			case SIGTR1: 
-					timeMax = 500.0; //5400
+					timeMax = 5400.0; //5400
 					sendSig(SIGSTART, sem_control, 0);
 					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 		
 					break;
 			case SIGTR2: 
-					timeMax = 500.0; //5400
+					timeMax = 5400.0; //5400
 					sendSig(SIGSTART, sem_control, 0);
 					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 
 					break;
 			case SIGTR3: 
-					timeMax = 500.0; //5400
+					timeMax = 3600.0; //5400
 					sendSig(SIGSTART, sem_control, 0);
 					for(i = 0; i < 22; i++)	sendSig(SIGSTART, sem_race, i); 
 					break;
