@@ -228,7 +228,7 @@ void server(char *date_time){
 										localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
 									}
 								}
-								if(localStock.bestSector[j].time < tabRead[k].lapTimes[tabRead[k].lnum].tabSect[j].stime){
+								if(localStock.bestSector[j].time > tabRead[k].lapTimes[tabRead[k].lnum].tabSect[j].stime){
 									localStock.bestSector[j].time = tabRead[k].lapTimes[tabRead[k].lnum].tabSect[j].stime;
 									localStock.bestSector[j].num = localStock.tabResult[k].num;
 									localStock.bestSector[j].teamName = localStock.tabResult[k].teamName;
@@ -250,9 +250,9 @@ void server(char *date_time){
 											localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
 										}
 									}
-									if(localStock.bestSector[j].time < tabRead[k].lapTimes[i].tabSect[j].stime){
+									if(localStock.bestSector[j].time > tabRead[k].lapTimes[i].tabSect[j].stime){
 										localStock.bestSector[j].time = tabRead[k].lapTimes[i].tabSect[j].stime;
-										localStock.bestSector[j].num = i;
+										localStock.bestSector[j].num = localStock.tabResult[k].num;
 										localStock.bestSector[j].teamName = localStock.tabResult[k].teamName;
 									}
 									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
@@ -268,9 +268,9 @@ void server(char *date_time){
 											localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
 										}
 									}
-									if(localStock.bestSector[j].time < tabRead[k].lapTimes[i].tabSect[j].stime){
+									if(localStock.bestSector[j].time > tabRead[k].lapTimes[i].tabSect[j].stime){
 										localStock.bestSector[j].time = tabRead[k].lapTimes[i].tabSect[j].stime;
-										localStock.bestSector[j].num = i;
+										localStock.bestSector[j].num = localStock.tabResult[k].num;
 										localStock.bestSector[j].teamName = localStock.tabResult[k].teamName;
 									}
 									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
@@ -286,9 +286,9 @@ void server(char *date_time){
 											localStock.tabResult[k].bestLapTime = localStock.tabResult[k].timeLastLap;
 										}
 									}
-									if(localStock.bestSector[j].time < tabRead[k].lapTimes[i].tabSect[j].stime){
+									if(localStock.bestSector[j].time > tabRead[k].lapTimes[i].tabSect[j].stime){
 										localStock.bestSector[j].time = tabRead[k].lapTimes[i].tabSect[j].stime;
-										localStock.bestSector[j].num = i;
+										localStock.bestSector[j].num = localStock.tabResult[k].num;
 										localStock.bestSector[j].teamName = localStock.tabResult[k].teamName;
 									}
 									localStock.tabResult[k].timeGlobal += tabRead[k].lapTimes[i].tabSect[j].stime;
